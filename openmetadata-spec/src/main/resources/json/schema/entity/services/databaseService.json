@@ -73,7 +73,8 @@
         "Informix",
         "Iomete",
         "QuestDB",
-        "SapBw4Hana"
+        "SapBw4Hana",
+        "Kyuubi"
       ],
       "javaEnums": [
         {
@@ -252,6 +253,9 @@
         },
         {
           "name": "SapBw4Hana"
+        },
+        {
+          "name": "Kyuubi"
         }
       ]
     },
@@ -435,6 +439,9 @@
             },
             {
               "$ref": "./connections/database/sapBw4HanaConnection.json"
+            },
+            {
+              "$ref": "./connections/database/kyuubiConnection.json"
             }
           ]
         }

@@ -11,15 +11,7 @@
  *  limitations under the License.
  */
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Dropdown,
-  InputRef,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Badge, Button, Dropdown, InputRef, Tooltip, Typography } from 'antd';
 import { Header } from 'antd/lib/layout/layout';
 import { AxiosError } from 'axios';
 import classNames from 'classnames';
@@ -32,8 +24,6 @@ import { useNavigate } from 'react-router-dom';
 import { ReactComponent as DropDownIcon } from '../../assets/svg/drop-down.svg';
 import { ReactComponent as IconBell } from '../../assets/svg/ic-alert-bell.svg';
 import { ReactComponent as DomainIcon } from '../../assets/svg/ic-domain.svg';
-import { ReactComponent as Help } from '../../assets/svg/ic-help.svg';
-import { ReactComponent as RefreshIcon } from '../../assets/svg/ic-refresh.svg';
 import { ReactComponent as SidebarCollapsedIcon } from '../../assets/svg/ic-sidebar-collapsed.svg';
 import { ReactComponent as SidebarExpandedIcon } from '../../assets/svg/ic-sidebar-expanded.svg';
 import {
@@ -633,7 +623,8 @@ const NavBar = () => {
                 onClick: handleLanguageChange,
               }}
               placement="bottomRight"
-              trigger={['click']}>
+              trigger={['click']}
+            >
               <Button
                 className="flex-center gap-2 p-x-xs font-medium"
                 data-testid="language-selector-button"
@@ -662,32 +653,19 @@ const NavBar = () => {
               }}
               placement="bottomRight"
               trigger={['click']}
-              onOpenChange={handleBellClick}>
+              onOpenChange={handleBellClick}
+            >
               <Button
                 className="flex-center"
                 icon={
                   <Badge
                     dot={hasTaskNotification || hasMentionNotification}
-                    offset={[-3, 3]}>
+                    offset={[-3, 3]}
+                  >
                     <IconBell data-testid="task-notifications" width={20} />
                   </Badge>
                 }
                 title={t('label.notification-plural')}
-                type="text"
-              />
-            </Dropdown>
-            <Dropdown
-              menu={{
-                items: getHelpDropdownItems(version),
-              }}
-              overlayStyle={{ width: 175 }}
-              placement="bottomRight"
-              trigger={['click']}>
-              <Button
-                className="flex-center"
-                data-testid="help-icon"
-                icon={<Help width={20} />}
-                title={t('label.need-help')}
                 type="text"
               />
             </Dropdown>
