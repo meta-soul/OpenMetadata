@@ -71,7 +71,8 @@
         "MicrosoftFabric",
         "BurstIQ",
         "Informix",
-        "Iomete"
+        "Iomete",
+        "Kyuubi"
       ],
       "javaEnums": [
         {
@@ -244,6 +245,9 @@
         },
         {
           "name": "Iomete"
+        },
+        {
+          "name": "Kyuubi"
         }
       ]
     },
@@ -421,6 +425,9 @@
             },
             {
               "$ref": "./connections/database/iometeConnection.json"
+            },
+            {
+              "$ref": "./connections/database/kyuubiConnection.json"
             }
           ]
         }

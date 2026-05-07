@@ -46,6 +46,7 @@ import greenplumConnection from '../jsons/connectionSchemas/connections/database
 import hiveConnection from '../jsons/connectionSchemas/connections/database/hiveConnection.json';
 import impalaConnection from '../jsons/connectionSchemas/connections/database/impalaConnection.json';
 import iometeConnection from '../jsons/connectionSchemas/connections/database/iometeConnection.json';
+import kyuubiConnection from '../jsons/connectionSchemas/connections/database/kyuubiConnection.json';
 import mariaDBConnection from '../jsons/connectionSchemas/connections/database/mariaDBConnection.json';
 import microsoftFabricConnection from '../jsons/connectionSchemas/connections/database/microsoftFabricConnection.json';
 import mongoDBConnection from '../jsons/connectionSchemas/connections/database/mongoDBConnection.json';
@@ -318,6 +319,11 @@ export const getDatabaseConfig = (type: DatabaseServiceType) => {
 
     case DatabaseServiceType.Iomete: {
       schema = iometeConnection;
+
+      break;
+    }
+    case DatabaseServiceType.Kyuubi: {
+      schema = kyuubiConnection;
 
       break;
     }
