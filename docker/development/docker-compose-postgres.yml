@@ -506,6 +506,7 @@ services:
       dockerfile: ingestion/Dockerfile.ci
       args:
         INGESTION_DEPENDENCY: ${INGESTION_DEPENDENCY:-all}
+        https_proxy: ${https_proxy:-""}
     container_name: openmetadata_ingestion
     environment:
       AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"

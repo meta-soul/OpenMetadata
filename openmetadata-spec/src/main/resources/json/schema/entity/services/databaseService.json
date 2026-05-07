@@ -70,7 +70,8 @@
         "Dremio",
         "MicrosoftFabric",
         "BurstIQ",
-        "Informix"
+        "Informix",
+        "Kyuubi"
       ],
       "javaEnums": [
         {
@@ -240,6 +241,9 @@
         },
         {
           "name": "Informix"
+        },
+        {
+          "name": "Kyuubi"
         }
       ]
     },
@@ -414,6 +418,9 @@
             },
             {
               "$ref": "./connections/database/informixConnection.json"
+            },
+            {
+              "$ref": "./connections/database/kyuubiConnection.json"
             }
           ]
         }

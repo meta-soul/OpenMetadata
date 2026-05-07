@@ -11,15 +11,7 @@
  *  limitations under the License.
  */
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Dropdown,
-  InputRef,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Badge, Button, Dropdown, InputRef, Tooltip, Typography } from 'antd';
 import { Header } from 'antd/lib/layout/layout';
 import { AxiosError } from 'axios';
 import classNames from 'classnames';
@@ -33,8 +25,6 @@ import { useNavigate } from 'react-router-dom';
 import { ReactComponent as DropDownIcon } from '../../assets/svg/drop-down.svg';
 import { ReactComponent as IconBell } from '../../assets/svg/ic-alert-bell.svg';
 import { ReactComponent as DomainIcon } from '../../assets/svg/ic-domain.svg';
-import { ReactComponent as Help } from '../../assets/svg/ic-help.svg';
-import { ReactComponent as RefreshIcon } from '../../assets/svg/ic-refresh.svg';
 import { ReactComponent as SidebarCollapsedIcon } from '../../assets/svg/ic-sidebar-collapsed.svg';
 import { ReactComponent as SidebarExpandedIcon } from '../../assets/svg/ic-sidebar-expanded.svg';
 import {
@@ -75,7 +65,6 @@ import {
 import { languageSelectOptions } from '../../utils/i18next/i18nextUtil';
 import { SupportedLocales } from '../../utils/i18next/LocalUtil.interface';
 import { isCommandKeyPress, Keys } from '../../utils/KeyboardUtil';
-import { getHelpDropdownItems } from '../../utils/NavbarUtils';
 import { getSettingPath } from '../../utils/RouterUtils';
 import { showErrorToast } from '../../utils/ToastUtils';
 import { ActivityFeedTabs } from '../ActivityFeed/ActivityFeedTab/ActivityFeedTab.interface';
@@ -95,7 +84,7 @@ const NavBar = () => {
   const { onUpdateCSVExportJob } = useEntityExportModalProvider();
   const { handleDeleteEntityWebsocketResponse } = useAsyncDeleteProvider();
   const Logo = useMemo(() => brandClassBase.getMonogram().src, []);
-  const [showVersionMissMatchAlert, setShowVersionMissMatchAlert] =
+  const [_showVersionMissMatchAlert, setShowVersionMissMatchAlert] =
     useState(false);
   const location = useCustomLocation();
   const navigate = useNavigate();
@@ -444,7 +433,8 @@ const NavBar = () => {
               placement="right"
               title={
                 isSidebarCollapsed ? t('label.expand') : t('label.collapse')
-              }>
+              }
+            >
               <Button
                 className="mr-2 w-6 h-6 p-0 flex-center"
                 data-testid="sidebar-toggle"
@@ -477,7 +467,8 @@ const NavBar = () => {
                   selectedDomain={activeDomainEntityRef}
                   wrapInButton={false}
                   onCancel={() => setIsDomainDropdownOpen(false)}
-                  onUpdate={handleDomainChange}>
+                  onUpdate={handleDomainChange}
+                >
                   <Button
                     className={classNames(
                       'domain-nav-btn flex-center gap-2 p-x-sm p-y-xs font-medium m-l-md',
@@ -488,7 +479,8 @@ const NavBar = () => {
                     data-testid="domain-dropdown"
                     onClick={() =>
                       setIsDomainDropdownOpen(!isDomainDropdownOpen)
-                    }>
+                    }
+                  >
                     <DomainIcon
                       className="d-flex"
                       height={20}
@@ -515,10 +507,12 @@ const NavBar = () => {
                 onClick: handleLanguageChange,
               }}
               placement="bottomRight"
-              trigger={['click']}>
+              trigger={['click']}
+            >
               <Button
                 className="flex-center gap-2 p-x-xs font-medium"
-                type="text">
+                type="text"
+              >
                 {language ? upperCase(language.split('-')[0]) : ''}{' '}
                 <DropDownIcon width={12} />
               </Button>
@@ -544,13 +538,15 @@ const NavBar = () => {
               }}
               placement="bottomRight"
               trigger={['click']}
-              onOpenChange={handleBellClick}>
+              onOpenChange={handleBellClick}
+            >
               <Button
                 className="flex-center"
                 icon={
                   <Badge
                     dot={hasTaskNotification || hasMentionNotification}
-                    offset={[-3, 3]}>
+                    offset={[-3, 3]}
+                  >
                     <IconBell data-testid="task-notifications" width={20} />
                   </Badge>
                 }
@@ -558,45 +554,10 @@ const NavBar = () => {
                 type="text"
               />
             </Dropdown>
-            <Dropdown
-              menu={{
-                items: getHelpDropdownItems(version),
-              }}
-              overlayStyle={{ width: 175 }}
-              placement="bottomRight"
-              trigger={['click']}>
-              <Button
-                className="flex-center"
-                data-testid="help-icon"
-                icon={<Help width={20} />}
-                title={t('label.need-help')}
-                type="text"
-              />
-            </Dropdown>
             <UserProfileIcon />
           </div>
         </div>
       </Header>
-      {showVersionMissMatchAlert && (
-        <Alert
-          showIcon
-          action={
-            <Button
-              size="small"
-              type="link"
-              onClick={() => {
-                navigate(0);
-              }}>
-              {t('label.refresh')}
-            </Button>
-          }
-          className="refresh-alert slide-in-top"
-          description="For a seamless experience recommend you to refresh the page"
-          icon={<RefreshIcon />}
-          message="A new version is available"
-          type="info"
-        />
-      )}
       {renderAlertCards}
     </>
   );
