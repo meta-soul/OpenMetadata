@@ -666,9 +666,11 @@ export const AuthProvider = ({
       authConfig?.provider === AuthProviderEnum.Saml
     ) {
       return (
-        <GenericAuthenticator ref={authenticatorRef}>
-          {childElement}
-        </GenericAuthenticator>
+        <BasicAuthProvider>
+          <GenericAuthenticator ref={authenticatorRef}>
+            {childElement}
+          </GenericAuthenticator>
+        </BasicAuthProvider>
       );
     }
     switch (authConfig?.provider) {
@@ -684,48 +686,56 @@ export const AuthProvider = ({
       }
       case AuthProviderEnum.Auth0: {
         return (
-          <Auth0Provider
-            useRefreshTokens
-            cacheLocation="memory"
-            clientId={authConfig.clientId?.toString() ?? ''}
-            domain={authConfig.authority?.toString() ?? ''}
-            redirectUri={authConfig.callbackUrl?.toString()}
-          >
-            <Auth0Authenticator ref={authenticatorRef}>
-              {childElement}
-            </Auth0Authenticator>
-          </Auth0Provider>
+          <BasicAuthProvider>
+            <Auth0Provider
+              useRefreshTokens
+              cacheLocation="memory"
+              clientId={authConfig.clientId?.toString() ?? ''}
+              domain={authConfig.authority?.toString() ?? ''}
+              redirectUri={authConfig.callbackUrl?.toString()}
+            >
+              <Auth0Authenticator ref={authenticatorRef}>
+                {childElement}
+              </Auth0Authenticator>
+            </Auth0Provider>
+          </BasicAuthProvider>
         );
       }
       case AuthProviderEnum.Okta: {
         return (
-          <OktaAuthProvider>
-            <OktaAuthenticator ref={authenticatorRef}>
-              {childElement}
-            </OktaAuthenticator>
-          </OktaAuthProvider>
+          <BasicAuthProvider>
+            <OktaAuthProvider>
+              <OktaAuthenticator ref={authenticatorRef}>
+                {childElement}
+              </OktaAuthenticator>
+            </OktaAuthProvider>
+          </BasicAuthProvider>
         );
       }
       case AuthProviderEnum.Google:
       case AuthProviderEnum.CustomOidc:
       case AuthProviderEnum.AwsCognito: {
         return (
-          <OidcAuthenticator
-            childComponentType={childComponentType}
-            ref={authenticatorRef}
-            userConfig={userConfig}
-          >
-            {childElement}
-          </OidcAuthenticator>
+          <BasicAuthProvider>
+            <OidcAuthenticator
+              childComponentType={childComponentType}
+              ref={authenticatorRef}
+              userConfig={userConfig}
+            >
+              {childElement}
+            </OidcAuthenticator>
+          </BasicAuthProvider>
         );
       }
       case AuthProviderEnum.Azure: {
         return msalInstance ? (
-          <MsalProvider instance={msalInstance}>
-            <MsalAuthenticator ref={authenticatorRef}>
-              {childElement}
-            </MsalAuthenticator>
-          </MsalProvider>
+          <BasicAuthProvider>
+            <MsalProvider instance={msalInstance}>
+              <MsalAuthenticator ref={authenticatorRef}>
+                {childElement}
+              </MsalAuthenticator>
+            </MsalProvider>
+          </BasicAuthProvider>
         ) : (
           <Loader fullScreen />
         );

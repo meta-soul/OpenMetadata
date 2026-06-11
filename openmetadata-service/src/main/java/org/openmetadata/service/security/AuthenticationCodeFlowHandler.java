@@ -884,9 +884,18 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
     List<String> teamsFromClaim = findTeamsFromClaims(teamClaimMapping, claims);
 
     try {
-      // Fetch user with teams relationship loaded to preserve existing team memberships
+      // Fetch user with full fields including authenticationMechanism and roles/teams
+      // Use UserRepository.getFieldsWithUserAuth to include the auth mechanism field
+      org.openmetadata.service.jdbi3.UserRepository userRepo =
+          (org.openmetadata.service.jdbi3.UserRepository)
+              Entity.getEntityRepository(Entity.USER);
       User user =
-          Entity.getEntityByName(Entity.USER, userName, "id,roles,teams", Include.NON_DELETED);
+          userRepo.getByName(
+              null,
+              userName,
+              userRepo.getFieldsWithUserAuth("id,roles,teams"),
+              Include.NON_DELETED,
+              true);
 
       boolean shouldBeAdmin = getAdminPrincipals().contains(userName);
       boolean needsUpdate = false;

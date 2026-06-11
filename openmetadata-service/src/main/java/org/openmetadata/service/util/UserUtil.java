@@ -113,7 +113,10 @@ public final class UserUtil {
             updateUserWithHashedPwd(updatedUser, password);
             EmailUtil.sendInviteMailToAdmin(updatedUser, password);
           }
-        } else {
+        } else if (originalUser.getAuthenticationMechanism() == null
+            || originalUser.getAuthenticationMechanism().getConfig() == null) {
+          // Only clear auth mechanism for non-BASIC providers if no password is set.
+          // Preserve existing BASIC auth so email/password login still works alongside SSO.
           updatedUser.setAuthenticationMechanism(new AuthenticationMechanism());
         }
 

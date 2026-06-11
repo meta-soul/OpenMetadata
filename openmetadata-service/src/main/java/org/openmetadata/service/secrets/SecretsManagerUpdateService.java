@@ -119,7 +119,6 @@ public class SecretsManagerUpdateService {
                     botUser.getName(),
                     botUser.getId(),
                     e.getMessage());
-                // Continue processing other bot users instead of failing the entire migration
               }
             });
   }

@@ -15,10 +15,15 @@ public class AuthLoginServlet extends HttpServlet {
     handler.handleLogin(req, resp);
   }
 
-  @Override
-  protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
-    // Basic and LDAP auth use POST, OIDC/SAML use GET
-    AuthServeletHandler handler = AuthServeletHandlerRegistry.getHandler();
+ @Override
+ protected void doPost(HttpServletRequest req, HttpServletResponse resp) {
+   // Basic and LDAP auth use POST, OIDC/SAML use GET
+    // When a BasicAuth fallback handler is registered (e.g., when OIDC/SAML is configured),
+    // use it for POST requests so email/password login always works even if SSO is broken.
+    AuthServeletHandler handler = AuthServeletHandlerRegistry.getBasicAuthHandler();
+    if (handler == null) {
+      handler = AuthServeletHandlerRegistry.getHandler();
+    }
     handler.handleLogin(req, resp);
-  }
+ }
 }

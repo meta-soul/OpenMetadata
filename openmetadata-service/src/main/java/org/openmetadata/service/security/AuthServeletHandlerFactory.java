@@ -14,6 +14,7 @@ import org.openmetadata.service.security.auth.SecurityConfigurationManager;
 @Slf4j
 public class AuthServeletHandlerFactory {
   public static AuthServeletHandler getHandler(OpenMetadataApplicationConfig config) {
+
     AuthenticationConfiguration authConfig = SecurityConfigurationManager.getCurrentAuthConfig();
     AuthorizerConfiguration authzConfig = SecurityConfigurationManager.getCurrentAuthzConfig();
 
@@ -23,8 +24,21 @@ public class AuthServeletHandlerFactory {
     }
 
     AuthProvider provider = authConfig.getProvider();
-    LOG.info("Creating AuthServeletHandler for provider: {}", provider);
+   LOG.info("Creating AuthServeletHandler for provider: {}", provider);
 
+    // For OIDC/SAML providers, register a BasicAuthServletHandler as fallback.
+    // This allows POST to work with email/password even when SSO is configured,
+    // preventing lockout if the SSO configuration is incorrect.
+    if (provider != AuthProvider.BASIC && provider != AuthProvider.LDAP) {
+      try {
+        AuthServeletHandlerRegistry.setBasicAuthHandler(
+            BasicAuthServletHandler.getInstance(authConfig, authzConfig));
+      } catch (Exception e) {
+        LOG.warn("Failed to initialize BasicAuth fallback handler: {}", e.getMessage());
+      }
+    } else {
+      AuthServeletHandlerRegistry.setBasicAuthHandler(null);
+    }
     // Route based on provider type
     switch (provider) {
       case BASIC:
