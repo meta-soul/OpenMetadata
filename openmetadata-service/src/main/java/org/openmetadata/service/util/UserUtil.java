@@ -139,6 +139,9 @@ public final class UserUtil {
       if (authProvider.equals(AuthProvider.BASIC)) {
         updateUserWithHashedPwd(updatedUser, password);
         EmailUtil.sendInviteMailToAdmin(updatedUser, password);
+      } else {
+        // Set password for non-BASIC providers too, so Basic Auth fallback works alongside SSO
+        updateUserWithHashedPwd(updatedUser, password);
       }
     }
 
