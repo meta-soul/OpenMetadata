@@ -887,8 +887,7 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
       // Fetch user with full fields including authenticationMechanism and roles/teams
       // Use UserRepository.getFieldsWithUserAuth to include the auth mechanism field
       org.openmetadata.service.jdbi3.UserRepository userRepo =
-          (org.openmetadata.service.jdbi3.UserRepository)
-              Entity.getEntityRepository(Entity.USER);
+          (org.openmetadata.service.jdbi3.UserRepository) Entity.getEntityRepository(Entity.USER);
       User user =
           userRepo.getByName(
               null,

@@ -1198,12 +1198,12 @@ public class SystemRepository {
         return providerValidation;
       }
 
-     // Use existing validation method to test actual connectivity only for confidential clients
-     // or when oidcConfiguration is present (some custom OIDC setups)
-     if ("confidential".equals(clientType) || authConfig.getOidcConfiguration() != null) {
-       try {
-         AuthenticationCodeFlowHandler.validateConfig(authConfig, authzConfig);
-       } catch (Exception e) {
+      // Use existing validation method to test actual connectivity only for confidential clients
+      // or when oidcConfiguration is present (some custom OIDC setups)
+      if ("confidential".equals(clientType) || authConfig.getOidcConfiguration() != null) {
+        try {
+          AuthenticationCodeFlowHandler.validateConfig(authConfig, authzConfig);
+        } catch (Exception e) {
           // Log warning but allow the configuration to be saved.
           // The OIDC provider might be temporarily unreachable or the discovery endpoint
           // might use a non-standard URL (e.g., with a subpath or port). Blocking the save

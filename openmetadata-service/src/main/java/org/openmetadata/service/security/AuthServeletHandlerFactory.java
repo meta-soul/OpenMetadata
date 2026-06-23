@@ -24,7 +24,7 @@ public class AuthServeletHandlerFactory {
     }
 
     AuthProvider provider = authConfig.getProvider();
-   LOG.info("Creating AuthServeletHandler for provider: {}", provider);
+    LOG.info("Creating AuthServeletHandler for provider: {}", provider);
 
     // For OIDC/SAML providers, register a BasicAuthServletHandler as fallback.
     // This allows POST to work with email/password even when SSO is configured,

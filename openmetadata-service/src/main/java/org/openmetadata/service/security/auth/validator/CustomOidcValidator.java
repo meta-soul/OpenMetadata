@@ -38,28 +38,28 @@ public class CustomOidcValidator {
   private FieldError validateCustomOidcPublicClient(
       AuthenticationConfiguration authConfig, OidcClientConfig oidcConfig) {
     try {
-     String discoveryUri = extractDiscoveryUri(authConfig, oidcConfig);
-     if (nullOrEmpty(discoveryUri)) {
-       return ValidationErrorBuilder.createFieldError(
-           ValidationErrorBuilder.FieldPaths.OIDC_DISCOVERY_URI,
-           "Discovery URI is required for custom OIDC validation. Provide either authority + /.well-known/openid-configuration or explicit discoveryUri");
-     }
+      String discoveryUri = extractDiscoveryUri(authConfig, oidcConfig);
+      if (nullOrEmpty(discoveryUri)) {
+        return ValidationErrorBuilder.createFieldError(
+            ValidationErrorBuilder.FieldPaths.OIDC_DISCOVERY_URI,
+            "Discovery URI is required for custom OIDC validation. Provide either authority + /.well-known/openid-configuration or explicit discoveryUri");
+      }
 
-     FieldError discoveryCheck =
-         discoveryValidator.validateAgainstDiscovery(discoveryUri, authConfig, oidcConfig);
-     if (discoveryCheck != null) {
+      FieldError discoveryCheck =
+          discoveryValidator.validateAgainstDiscovery(discoveryUri, authConfig, oidcConfig);
+      if (discoveryCheck != null) {
         LOG.warn(
             "Custom OIDC discovery validation warning: {}. Continuing with partial validation.",
             discoveryCheck.getError());
         return null;
-     }
+      }
 
-     DiscoveryEndpoints endpoints = extractEndpointsFromDiscovery(discoveryUri);
-     if (endpoints == null) {
+      DiscoveryEndpoints endpoints = extractEndpointsFromDiscovery(discoveryUri);
+      if (endpoints == null) {
         LOG.warn(
             "Could not extract endpoints from discovery document. Some validations will be skipped.");
         return null;
-     }
+      }
 
       FieldError jwksValidation = validateJwksEndpoint(endpoints.jwksUri, authConfig);
       if (jwksValidation != null) {
