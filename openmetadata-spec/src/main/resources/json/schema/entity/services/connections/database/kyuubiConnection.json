@@ -122,7 +122,9 @@
     },
     "supportsUsageExtraction": {
       "title": "Supports Usage Extraction",
-      "$ref": "../connectionBasicType.json#/definitions/supportsUsageExtraction"
+      "description": "Supports Usage Extraction.",
+      "type": "boolean",
+      "default": false
     },
     "sampleDataStorageConfig": {
       "title": "Storage Config for Sample Data",
