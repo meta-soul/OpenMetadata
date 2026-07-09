@@ -463,6 +463,120 @@ public interface SearchClient
 
   String PROPAGATE_TEST_SUITES_SCRIPT = "ctx._source.testSuites = params.testSuites";
 
+  /**
+   * Single static script for propagating inherited field changes to child search documents.
+   * All field values are passed via params to avoid per-request Painless script compilation.
+   */
+  String PROPAGATE_INHERITED_CHANGES_SCRIPT =
+      """
+      if (params.containsKey('updatedOwners')) {
+        if (ctx._source.owners == null || ctx._source.owners.isEmpty() ||
+            (ctx._source.owners.size() > 0 && ctx._source.owners[0] != null && ctx._source.owners[0].inherited == true)) {
+          ctx._source.owners = params.updatedOwners;
+        }
+      }
+      if (params.containsKey('deletedOwners')) {
+        if (ctx._source.owners != null) {
+          ctx._source.owners.removeIf(owner -> owner.inherited == true);
+          ctx._source.owners.addAll(params.deletedOwners);
+        }
+      }
+      if (params.containsKey('updatedDomains')) {
+        if (ctx._source.domains == null || ctx._source.domains.isEmpty() ||
+            (ctx._source.domains.size() > 0 && ctx._source.domains[0] != null && ctx._source.domains[0].inherited == true)) {
+          ctx._source.domains = params.updatedDomains;
+        }
+      }
+      if (params.containsKey('deletedDomains')) {
+        if (ctx._source.domains != null) {
+          ctx._source.domains.removeIf(domain -> domain.inherited == true);
+          ctx._source.domains.addAll(params.deletedDomains);
+        }
+      }
+      if (params.containsKey('updatedFollowers')) {
+        if (ctx._source.containsKey('entityType') && ctx._source.entityType == 'testCase') {
+          if (params.updatedFollowers != null) {
+            List followerIds = new ArrayList();
+            for (def follower : params.updatedFollowers) {
+              if (follower != null && follower.containsKey('id')) {
+                followerIds.add(follower.id.toString());
+              }
+            }
+            ctx._source.followers = followerIds;
+          }
+        }
+      }
+      if (params.containsKey('deletedFollowers')) {
+        if (ctx._source.containsKey('entityType') && ctx._source.entityType == 'testCase') {
+          if (params.deletedFollowers != null) {
+            List followerIds = new ArrayList();
+            for (def follower : params.deletedFollowers) {
+              if (follower != null && follower.containsKey('id')) {
+                followerIds.add(follower.id.toString());
+              }
+            }
+            ctx._source.followers = followerIds;
+          } else {
+            ctx._source.followers = new ArrayList();
+          }
+        }
+      }
+      if (params.containsKey('testSuites')) {
+        ctx._source.testSuites = params.testSuites;
+      }
+      if (params.containsKey('simpleFields')) {
+        for (def entry : params.simpleFields.entrySet()) {
+          ctx._source.put(entry.getKey(), entry.getValue());
+        }
+      }
+      if (params.containsKey('removeFields')) {
+        for (def fieldName : params.removeFields) {
+          ctx._source.remove(fieldName);
+        }
+      }
+      if (params.containsKey('nestedFields')) {
+        for (def entry : params.nestedFields.entrySet()) {
+          int dotIndex = entry.getKey().indexOf('.');
+          if (dotIndex > 0) {
+            String parentKey = entry.getKey().substring(0, dotIndex);
+            String childKey = entry.getKey().substring(dotIndex + 1);
+            if (ctx._source[parentKey] == null) {
+              ctx._source[parentKey] = new HashMap();
+            }
+            ctx._source[parentKey][childKey] = entry.getValue();
+          }
+        }
+      }
+      if (params.containsKey('addEntityRefs')) {
+        for (def entry : params.addEntityRefs.entrySet()) {
+          String fieldName = entry.getKey();
+          if (ctx._source[fieldName] == null || (ctx._source[fieldName] != null && ctx._source[fieldName].inherited == true)) {
+            def newObject = entry.getValue();
+            newObject.inherited = true;
+            ctx._source.put(fieldName, newObject);
+          }
+        }
+      }
+      if (params.containsKey('updateEntityRefs')) {
+        def beforeUpdate = params.entityBeforeUpdate;
+        for (def entry : params.updateEntityRefs.entrySet()) {
+          String fieldName = entry.getKey();
+          def newObject = entry.getValue();
+          if (ctx._source[fieldName] == null || (ctx._source[fieldName].inherited == true && ctx._source[fieldName].id == beforeUpdate.id)) {
+            newObject.inherited = true;
+            ctx._source.put(fieldName, newObject);
+          }
+        }
+      }
+      if (params.containsKey('removeEntityRefs')) {
+        for (def fieldName : params.removeEntityRefs) {
+          if (ctx._source[fieldName] != null && ctx._source[fieldName].inherited == true) {
+            ctx._source.remove(fieldName);
+          }
+        }
+      }
+      """;
+
   String REMOVE_OWNERS_SCRIPT =
       """
       if (ctx._source.owners != null) {

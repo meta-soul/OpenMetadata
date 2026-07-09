@@ -17,31 +17,19 @@ import static org.openmetadata.service.Entity.QUERY;
 import static org.openmetadata.service.Entity.RAW_COST_ANALYSIS_REPORT_DATA;
 import static org.openmetadata.service.Entity.WEB_ANALYTIC_ENTITY_VIEW_REPORT_DATA;
 import static org.openmetadata.service.Entity.WEB_ANALYTIC_USER_ACTIVITY_REPORT_DATA;
-import static org.openmetadata.service.search.SearchClient.ADD_DOMAINS_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.ADD_FOLLOWERS_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.ADD_OWNERS_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.CASCADE_CERTIFICATION_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.DATA_ASSET_SEARCH_ALIAS;
 import static org.openmetadata.service.search.SearchClient.DEFAULT_UPDATE_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.GLOBAL_SEARCH_ALIAS;
-import static org.openmetadata.service.search.SearchClient.PROPAGATE_ENTITY_REFERENCE_FIELD_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.PROPAGATE_FIELD_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.PROPAGATE_NESTED_FIELD_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.PROPAGATE_TEST_SUITES_SCRIPT;
+import static org.openmetadata.service.search.SearchClient.PROPAGATE_INHERITED_CHANGES_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.REMOVE_DATA_PRODUCTS_CHILDREN_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.REMOVE_DOMAINS_CHILDREN_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.REMOVE_DOMAINS_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.REMOVE_ENTITY_RELATIONSHIP;
-import static org.openmetadata.service.search.SearchClient.REMOVE_FOLLOWERS_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.REMOVE_OWNERS_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.REMOVE_PROPAGATED_ENTITY_REFERENCE_FIELD_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.REMOVE_PROPAGATED_FIELD_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.REMOVE_TAGS_CHILDREN_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.REMOVE_TEST_SUITE_CHILDREN_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.SOFT_DELETE_RESTORE_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.UPDATE_ADDED_DELETE_GLOSSARY_TAGS;
 import static org.openmetadata.service.search.SearchClient.UPDATE_CERTIFICATION_SCRIPT;
-import static org.openmetadata.service.search.SearchClient.UPDATE_PROPAGATED_ENTITY_REFERENCE_FIELD_SCRIPT;
 import static org.openmetadata.service.search.SearchClient.UPDATE_TAGS_FIELD_SCRIPT;
 import static org.openmetadata.service.search.SearchConstants.DOMAINS_ID;
 import static org.openmetadata.service.search.SearchConstants.ENTITY_TYPE;
@@ -1336,144 +1324,134 @@ public class SearchRepository {
 
   private Pair<String, Map<String, Object>> getInheritedFieldChanges(
       ChangeDescription changeDescription, EntityInterface entity) {
-    StringBuilder scriptTxt = new StringBuilder();
     Map<String, Object> fieldData = new HashMap<>();
+    Map<String, Object> simpleFields = new HashMap<>();
+    Map<String, Object> nestedFields = new HashMap<>();
+    Map<String, Object> addEntityRefs = new HashMap<>();
+    Map<String, Object> updateEntityRefs = new HashMap<>();
+    List<String> removeFields = new ArrayList<>();
+    List<String> removeEntityRefs = new ArrayList<>();
+    boolean hasChanges = false;
 
     if (changeDescription != null) {
       for (FieldChange field : changeDescription.getFieldsDeleted()) {
-        if (inheritableFields.contains(field.getName())) {
-          try {
-            if (field.getName().equals(FIELD_OWNERS)) {
-              List<EntityReference> inheritedOwners =
-                  JsonUtils.deepCopyList(entity.getOwners(), EntityReference.class);
-              for (EntityReference inheritedOwner : inheritedOwners) {
-                inheritedOwner.setInherited(true);
-              }
-              fieldData.put("deletedOwners", inheritedOwners);
-              scriptTxt.append(REMOVE_OWNERS_SCRIPT);
-              scriptTxt.append(" ");
-            } else if (field.getName().equals(FIELD_DOMAINS)) {
-              List<EntityReference> inheritedDomains =
-                  JsonUtils.deepCopyList(entity.getDomains(), EntityReference.class);
-              for (EntityReference inheritedDomain : inheritedDomains) {
-                inheritedDomain.setInherited(true);
-              }
-              fieldData.put("deletedDomains", inheritedDomains);
-              scriptTxt.append(REMOVE_DOMAINS_SCRIPT);
-              scriptTxt.append(" ");
-            } else if (field.getName().equals(FIELD_FOLLOWERS)) {
-              List<EntityReference> inheritedFollowers =
-                  copyWithInheritedFlag(entity.getFollowers());
-              fieldData.put("deletedFollowers", inheritedFollowers);
-              scriptTxt.append(REMOVE_FOLLOWERS_SCRIPT);
-              scriptTxt.append(" ");
-            } else {
-              EntityReference entityReference =
-                  JsonUtils.readValue(field.getOldValue().toString(), EntityReference.class);
-              scriptTxt.append(
-                  String.format(
-                      REMOVE_PROPAGATED_ENTITY_REFERENCE_FIELD_SCRIPT,
-                      field.getName(),
-                      field.getName(),
-                      field.getName()));
-              fieldData.put(field.getName(), JsonUtils.getMap(entityReference));
-              scriptTxt.append(" ");
+        if (!inheritableFields.contains(field.getName())) {
+          continue;
+        }
+        hasChanges = true;
+        try {
+          if (field.getName().equals(FIELD_OWNERS)) {
+            List<EntityReference> inheritedOwners =
+                JsonUtils.deepCopyList(entity.getOwners(), EntityReference.class);
+            for (EntityReference inheritedOwner : inheritedOwners) {
+              inheritedOwner.setInherited(true);
             }
-          } catch (JsonParsingException e) {
-            scriptTxt.append(String.format(REMOVE_PROPAGATED_FIELD_SCRIPT, field.getName()));
+            fieldData.put("deletedOwners", inheritedOwners);
+          } else if (field.getName().equals(FIELD_DOMAINS)) {
+            List<EntityReference> inheritedDomains =
+                JsonUtils.deepCopyList(entity.getDomains(), EntityReference.class);
+            for (EntityReference inheritedDomain : inheritedDomains) {
+              inheritedDomain.setInherited(true);
+            }
+            fieldData.put("deletedDomains", inheritedDomains);
+          } else if (field.getName().equals(FIELD_FOLLOWERS)) {
+            List<EntityReference> inheritedFollowers = copyWithInheritedFlag(entity.getFollowers());
+            fieldData.put("deletedFollowers", inheritedFollowers);
+          } else {
+            JsonUtils.readValue(field.getOldValue().toString(), EntityReference.class);
+            removeEntityRefs.add(field.getName());
           }
+        } catch (JsonParsingException e) {
+          removeFields.add(field.getName());
         }
       }
       for (FieldChange field : changeDescription.getFieldsUpdated()) {
-        if (inheritableFields.contains(field.getName())) {
-          try {
-            EntityReference newEntityReference =
-                JsonUtils.readValue(field.getNewValue().toString(), EntityReference.class);
-            fieldData.put(
-                "entityBeforeUpdate",
-                JsonUtils.readValue(field.getOldValue().toString(), EntityReference.class));
-            scriptTxt.append(
-                String.format(
-                    UPDATE_PROPAGATED_ENTITY_REFERENCE_FIELD_SCRIPT,
-                    field.getName(),
-                    field.getName(),
-                    field.getName(),
-                    field.getName(),
-                    field.getName()));
-            fieldData.put(field.getName(), newEntityReference);
-          } catch (JsonParsingException e) {
-            if (field.getName().equals(Entity.FIELD_TEST_SUITES)) {
-              scriptTxt.append(PROPAGATE_TEST_SUITES_SCRIPT);
-              fieldData.put(Entity.FIELD_TEST_SUITES, field.getNewValue());
-            } else if (field.getName().equals(FIELD_DISPLAY_NAME)) {
-              String fieldPath =
-                  getFieldPath(entity.getEntityReference().getType(), field.getName());
-              fieldData.put(field.getName(), field.getNewValue().toString());
-              scriptTxt.append(
-                  String.format(PROPAGATE_NESTED_FIELD_SCRIPT, fieldPath, field.getName()));
-            } else {
-              scriptTxt.append(
-                  String.format(PROPAGATE_FIELD_SCRIPT, field.getName(), field.getNewValue()));
-            }
+        if (!inheritableFields.contains(field.getName())) {
+          continue;
+        }
+        hasChanges = true;
+        try {
+          EntityReference newEntityReference =
+              JsonUtils.readValue(field.getNewValue().toString(), EntityReference.class);
+          fieldData.put(
+              "entityBeforeUpdate",
+              JsonUtils.readValue(field.getOldValue().toString(), EntityReference.class));
+          updateEntityRefs.put(field.getName(), newEntityReference);
+        } catch (JsonParsingException e) {
+          if (field.getName().equals(Entity.FIELD_TEST_SUITES)) {
+            fieldData.put(Entity.FIELD_TEST_SUITES, field.getNewValue());
+          } else if (field.getName().equals(FIELD_DISPLAY_NAME)) {
+            nestedFields.put(
+                getFieldPath(entity.getEntityReference().getType(), field.getName()),
+                field.getNewValue().toString());
+          } else {
+            simpleFields.put(field.getName(), field.getNewValue());
           }
-          scriptTxt.append(" ");
         }
       }
       for (FieldChange field : changeDescription.getFieldsAdded()) {
-        if (inheritableFields.contains(field.getName())) {
-          try {
-            if (field.getName().equals(FIELD_OWNERS)) {
-              List<EntityReference> inheritedOwners =
-                  JsonUtils.deepCopyList(entity.getOwners(), EntityReference.class);
-              for (EntityReference inheritedOwner : inheritedOwners) {
-                inheritedOwner.setInherited(true);
-              }
-              fieldData.put("updatedOwners", inheritedOwners);
-              scriptTxt.append(ADD_OWNERS_SCRIPT);
-            } else if (field.getName().equals(FIELD_DOMAINS)) {
-              List<EntityReference> inheritedDomains =
-                  JsonUtils.deepCopyList(entity.getDomains(), EntityReference.class);
-              for (EntityReference inheritedDomain : inheritedDomains) {
-                inheritedDomain.setInherited(true);
-              }
-              fieldData.put("updatedDomains", inheritedDomains);
-              scriptTxt.append(ADD_DOMAINS_SCRIPT);
-            } else if (field.getName().equals(FIELD_FOLLOWERS)) {
-              List<EntityReference> inheritedFollowers =
-                  copyWithInheritedFlag(entity.getFollowers());
-              fieldData.put("updatedFollowers", inheritedFollowers);
-              scriptTxt.append(ADD_FOLLOWERS_SCRIPT);
-            } else {
-              EntityReference entityReference =
-                  JsonUtils.readValue(field.getNewValue().toString(), EntityReference.class);
-              scriptTxt.append(
-                  String.format(
-                      PROPAGATE_ENTITY_REFERENCE_FIELD_SCRIPT,
-                      field.getName(),
-                      field.getName(),
-                      field.getName(),
-                      field.getName(),
-                      field.getName()));
-              fieldData.put(field.getName(), entityReference);
+        if (!inheritableFields.contains(field.getName())) {
+          continue;
+        }
+        hasChanges = true;
+        try {
+          if (field.getName().equals(FIELD_OWNERS)) {
+            List<EntityReference> inheritedOwners =
+                JsonUtils.deepCopyList(entity.getOwners(), EntityReference.class);
+            for (EntityReference inheritedOwner : inheritedOwners) {
+              inheritedOwner.setInherited(true);
             }
-            scriptTxt.append(" ");
-          } catch (JsonParsingException e) {
-            if (field.getName().equals(FIELD_DISPLAY_NAME)) {
-              String fieldPath =
-                  getFieldPath(entity.getEntityReference().getType(), field.getName());
-              fieldData.put(field.getName(), field.getNewValue().toString());
-              scriptTxt.append(
-                  String.format(PROPAGATE_NESTED_FIELD_SCRIPT, fieldPath, field.getName()));
-            } else {
-              scriptTxt.append(
-                  String.format(PROPAGATE_FIELD_SCRIPT, field.getName(), field.getNewValue()));
-              scriptTxt.append(" ");
+            fieldData.put("updatedOwners", inheritedOwners);
+          } else if (field.getName().equals(FIELD_DOMAINS)) {
+            List<EntityReference> inheritedDomains =
+                JsonUtils.deepCopyList(entity.getDomains(), EntityReference.class);
+            for (EntityReference inheritedDomain : inheritedDomains) {
+              inheritedDomain.setInherited(true);
             }
+            fieldData.put("updatedDomains", inheritedDomains);
+          } else if (field.getName().equals(FIELD_FOLLOWERS)) {
+            List<EntityReference> inheritedFollowers = copyWithInheritedFlag(entity.getFollowers());
+            fieldData.put("updatedFollowers", inheritedFollowers);
+          } else {
+            EntityReference entityReference =
+                JsonUtils.readValue(field.getNewValue().toString(), EntityReference.class);
+            addEntityRefs.put(field.getName(), entityReference);
+          }
+        } catch (JsonParsingException e) {
+          if (field.getName().equals(FIELD_DISPLAY_NAME)) {
+            nestedFields.put(
+                getFieldPath(entity.getEntityReference().getType(), field.getName()),
+                field.getNewValue().toString());
+          } else {
+            simpleFields.put(field.getName(), field.getNewValue());
           }
         }
       }
     }
-    return new ImmutablePair<>(scriptTxt.toString(), fieldData);
+
+    if (!hasChanges) {
+      return new ImmutablePair<>("", fieldData);
+    }
+    if (!simpleFields.isEmpty()) {
+      fieldData.put("simpleFields", simpleFields);
+    }
+    if (!nestedFields.isEmpty()) {
+      fieldData.put("nestedFields", nestedFields);
+    }
+    if (!addEntityRefs.isEmpty()) {
+      fieldData.put("addEntityRefs", addEntityRefs);
+    }
+    if (!updateEntityRefs.isEmpty()) {
+      fieldData.put("updateEntityRefs", updateEntityRefs);
+    }
+    if (!removeFields.isEmpty()) {
+      fieldData.put("removeFields", removeFields);
+    }
+    if (!removeEntityRefs.isEmpty()) {
+      fieldData.put("removeEntityRefs", removeEntityRefs);
+    }
+
+    return new ImmutablePair<>(PROPAGATE_INHERITED_CHANGES_SCRIPT, fieldData);
   }
 
   private String getFieldPath(String entityType, String fieldName) {

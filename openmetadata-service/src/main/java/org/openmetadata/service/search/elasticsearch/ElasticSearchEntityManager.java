@@ -46,7 +46,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.openmetadata.common.utils.CommonUtil;
@@ -404,22 +403,23 @@ public class ElasticSearchEntityManager implements EntityManagementClient {
       Map<String, JsonData> params =
           convertToJsonDataMap(updates.getValue() == null ? Map.of() : updates.getValue());
 
-      client.updateByQuery(
-          u ->
-              u.index(Entity.getSearchRepository().getIndexOrAliasName(indexName))
-                  .query(
-                      q ->
-                          q.match(
-                              m ->
-                                  m.field(fieldAndValue.getKey())
-                                      .query(fieldAndValue.getValue())
-                                      .operator(Operator.And)))
-                  .script(
-                      s ->
-                          s.source(ss -> ss.scriptString(updates.getKey()))
-                              .lang(ScriptLanguage.Painless)
-                              .params(params))
-                  .refresh(true));
+      SearchRetryUtil.executeWithRetry(
+          () ->
+              client.updateByQuery(
+                  u ->
+                      u.index(Entity.getSearchRepository().getIndexOrAliasName(indexName))
+                          .query(
+                              q ->
+                                  q.term(
+                                      t ->
+                                          t.field(fieldAndValue.getKey())
+                                              .value(fieldAndValue.getValue())))
+                          .script(
+                              s ->
+                                  s.source(ss -> ss.scriptString(updates.getKey()))
+                                      .lang(ScriptLanguage.Painless)
+                                      .params(params))
+                          .refresh(true)));
 
       LOG.info("Successfully updated children in ElasticSearch for index: {}", indexName);
     } catch (IOException | ElasticsearchException e) {
@@ -431,8 +431,7 @@ public class ElasticSearchEntityManager implements EntityManagementClient {
   public void updateChildren(
       List<String> indexNames,
       Pair<String, String> fieldAndValue,
-      Pair<String, Map<String, Object>> updates)
-      throws IOException {
+      Pair<String, Map<String, Object>> updates) {
     if (!isClientAvailable) {
       LOG.error("ElasticSearch client is not available. Cannot update children for indices.");
       return;
@@ -440,24 +439,29 @@ public class ElasticSearchEntityManager implements EntityManagementClient {
     Map<String, JsonData> params =
         convertToJsonDataMap(updates.getValue() == null ? Map.of() : updates.getValue());
 
-    client.updateByQuery(
-        u ->
-            u.index(indexNames)
-                .query(
-                    q ->
-                        q.match(
-                            m ->
-                                m.field(fieldAndValue.getKey())
-                                    .query(fieldAndValue.getValue())
-                                    .operator(Operator.And)))
-                .script(
-                    s ->
-                        s.source(ss -> ss.scriptString(updates.getKey()))
-                            .lang(ScriptLanguage.Painless)
-                            .params(params))
-                .refresh(true));
+    try {
+      SearchRetryUtil.executeWithRetry(
+          () ->
+              client.updateByQuery(
+                  u ->
+                      u.index(indexNames)
+                          .query(
+                              q ->
+                                  q.term(
+                                      t ->
+                                          t.field(fieldAndValue.getKey())
+                                              .value(fieldAndValue.getValue())))
+                          .script(
+                              s ->
+                                  s.source(ss -> ss.scriptString(updates.getKey()))
+                                      .lang(ScriptLanguage.Painless)
+                                      .params(params))
+                          .refresh(true)));
 
-    LOG.info("Successfully updated children in ElasticSearch for indices: {}", indexNames);
+      LOG.info("Successfully updated children in ElasticSearch for indices: {}", indexNames);
+    } catch (IOException | ElasticsearchException e) {
+      LOG.error("Failed to update children in ElasticSearch for indices: {}", indexNames, e);
+    }
   }
 
   @Override
@@ -608,7 +612,6 @@ public class ElasticSearchEntityManager implements EntityManagementClient {
   }
 
   @Override
-  @SneakyThrows
   public void updateLineage(
       String indexName, Pair<String, String> fieldAndValue, EsLineageData lineageData) {
     if (!isClientAvailable) {
@@ -619,32 +622,78 @@ public class ElasticSearchEntityManager implements EntityManagementClient {
     Map<String, JsonData> params =
         Collections.singletonMap("lineageData", JsonData.of(JsonUtils.getMap(lineageData)));
 
-    UpdateByQueryResponse response =
-        client.updateByQuery(
-            u ->
-                u.index(indexName)
-                    .query(
-                        q ->
-                            q.match(
-                                m ->
-                                    m.field(fieldAndValue.getKey())
-                                        .query(fieldAndValue.getValue())
-                                        .operator(Operator.And)))
-                    .script(
-                        s ->
-                            s.source(ss -> ss.scriptString(ADD_UPDATE_LINEAGE))
-                                .lang(ScriptLanguage.Painless)
-                                .params(params))
-                    .refresh(true));
+    try {
+      if ("_id".equals(fieldAndValue.getKey())) {
+        String docId = fieldAndValue.getValue();
+        SearchRetryUtil.executeWithRetry(
+            () ->
+                client.update(
+                    u ->
+                        u.index(indexName)
+                            .id(docId)
+                            .refresh(Refresh.True)
+                            .retryOnConflict(3)
+                            .script(
+                                s ->
+                                    s.source(ss -> ss.scriptString(ADD_UPDATE_LINEAGE))
+                                        .lang(ScriptLanguage.Painless)
+                                        .params(params)),
+                    Map.class));
+        LOG.info(
+            "Successfully updated lineage in ElasticSearch for index: {}, docId: {}",
+            indexName,
+            docId);
+      } else {
+        UpdateByQueryResponse response =
+            client.updateByQuery(
+                u ->
+                    u.index(indexName)
+                        .query(
+                            q ->
+                                q.term(
+                                    t ->
+                                        t.field(fieldAndValue.getKey())
+                                            .value(fieldAndValue.getValue())))
+                        .script(
+                            s ->
+                                s.source(ss -> ss.scriptString(ADD_UPDATE_LINEAGE))
+                                    .lang(ScriptLanguage.Painless)
+                                    .params(params))
+                        .refresh(true));
 
-    LOG.info("Successfully updated lineage in ElasticSearch for index: {}", indexName);
+        LOG.info("Successfully updated lineage in ElasticSearch for index: {}", indexName);
 
-    if (!response.failures().isEmpty()) {
-      String failureDetails =
-          response.failures().stream()
-              .map(BulkIndexByScrollFailure::toString)
-              .collect(Collectors.joining("; "));
-      LOG.error("Update lineage encountered failures: {}", failureDetails);
+        if (!response.failures().isEmpty()) {
+          String failureDetails =
+              response.failures().stream()
+                  .map(BulkIndexByScrollFailure::toString)
+                  .collect(Collectors.joining("; "));
+          LOG.error("Update lineage encountered failures: {}", failureDetails);
+        }
+      }
+    } catch (ElasticsearchException e) {
+      if (e.status() == 404) {
+        LOG.warn(
+            "Document not found during lineage update for index: {}, field: {}, value: {}. "
+                + "The document may not have been indexed yet.",
+            indexName,
+            fieldAndValue.getKey(),
+            fieldAndValue.getValue());
+      } else {
+        LOG.error(
+            "Failed to update lineage in ElasticSearch for index: {}, field: {}, value: {}",
+            indexName,
+            fieldAndValue.getKey(),
+            fieldAndValue.getValue(),
+            e);
+      }
+    } catch (IOException e) {
+      LOG.error(
+          "Failed to update lineage in ElasticSearch for index: {}, field: {}, value: {}",
+          indexName,
+          fieldAndValue.getKey(),
+          fieldAndValue.getValue(),
+          e);
     }
   }
 

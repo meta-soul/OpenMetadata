@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.openmetadata.common.utils.CommonUtil;
@@ -439,29 +438,30 @@ public class OpenSearchEntityManager implements EntityManagementClient {
       Map<String, JsonData> params =
           convertToJsonDataMap(updates.getValue() == null ? Map.of() : updates.getValue());
 
-      client.updateByQuery(
-          u ->
-              u.index(Entity.getSearchRepository().getIndexOrAliasName(indexName))
-                  .query(
-                      q ->
-                          q.match(
-                              m ->
-                                  m.field(fieldAndValue.getKey())
-                                      .query(FieldValue.of(fieldAndValue.getValue()))
-                                      .operator(Operator.And)))
-                  .script(
-                      s ->
-                          s.inline(
-                              inline ->
-                                  inline
-                                      .lang(
-                                          l ->
-                                              l.builtin(
-                                                  os.org.opensearch.client.opensearch._types
-                                                      .BuiltinScriptLanguage.Painless))
-                                      .source(updates.getKey())
-                                      .params(params)))
-                  .refresh(Refresh.True));
+      SearchRetryUtil.executeWithRetry(
+          () ->
+              client.updateByQuery(
+                  u ->
+                      u.index(Entity.getSearchRepository().getIndexOrAliasName(indexName))
+                          .query(
+                              q ->
+                                  q.term(
+                                      t ->
+                                          t.field(fieldAndValue.getKey())
+                                              .value(FieldValue.of(fieldAndValue.getValue()))))
+                          .script(
+                              s ->
+                                  s.inline(
+                                      inline ->
+                                          inline
+                                              .lang(
+                                                  l ->
+                                                      l.builtin(
+                                                          os.org.opensearch.client.opensearch._types
+                                                              .BuiltinScriptLanguage.Painless))
+                                              .source(updates.getKey())
+                                              .params(params)))
+                          .refresh(Refresh.True)));
 
       LOG.info("Successfully updated children in OpenSearch for index: {}", indexName);
     } catch (IOException | OpenSearchException e) {
@@ -473,8 +473,7 @@ public class OpenSearchEntityManager implements EntityManagementClient {
   public void updateChildren(
       List<String> indexNames,
       Pair<String, String> fieldAndValue,
-      Pair<String, Map<String, Object>> updates)
-      throws IOException {
+      Pair<String, Map<String, Object>> updates) {
     if (!isClientAvailable) {
       LOG.error("OpenSearch client is not available. Cannot update children for indices.");
       return;
@@ -483,31 +482,36 @@ public class OpenSearchEntityManager implements EntityManagementClient {
     Map<String, JsonData> params =
         convertToJsonDataMap(updates.getValue() == null ? Map.of() : updates.getValue());
 
-    client.updateByQuery(
-        u ->
-            u.index(indexNames)
-                .query(
-                    q ->
-                        q.match(
-                            m ->
-                                m.field(fieldAndValue.getKey())
-                                    .query(FieldValue.of(fieldAndValue.getValue()))
-                                    .operator(Operator.And)))
-                .script(
-                    s ->
-                        s.inline(
-                            inline ->
-                                inline
-                                    .lang(
-                                        l ->
-                                            l.builtin(
-                                                os.org.opensearch.client.opensearch._types
-                                                    .BuiltinScriptLanguage.Painless))
-                                    .source(updates.getKey())
-                                    .params(params)))
-                .refresh(Refresh.True));
+    try {
+      SearchRetryUtil.executeWithRetry(
+          () ->
+              client.updateByQuery(
+                  u ->
+                      u.index(indexNames)
+                          .query(
+                              q ->
+                                  q.term(
+                                      t ->
+                                          t.field(fieldAndValue.getKey())
+                                              .value(FieldValue.of(fieldAndValue.getValue()))))
+                          .script(
+                              s ->
+                                  s.inline(
+                                      inline ->
+                                          inline
+                                              .lang(
+                                                  l ->
+                                                      l.builtin(
+                                                          os.org.opensearch.client.opensearch._types
+                                                              .BuiltinScriptLanguage.Painless))
+                                              .source(updates.getKey())
+                                              .params(params)))
+                          .refresh(Refresh.True)));
 
-    LOG.info("Successfully updated children in OpenSearch for indices: {}", indexNames);
+      LOG.info("Successfully updated children in OpenSearch for indices: {}", indexNames);
+    } catch (IOException | OpenSearchException e) {
+      LOG.error("Failed to update children in OpenSearch for indices: {}", indexNames, e);
+    }
   }
 
   @Override
@@ -668,7 +672,6 @@ public class OpenSearchEntityManager implements EntityManagementClient {
   }
 
   @Override
-  @SneakyThrows
   public void updateLineage(
       String indexName, Pair<String, String> fieldAndValue, EsLineageData lineageData) {
     if (!isClientAvailable) {
@@ -679,39 +682,93 @@ public class OpenSearchEntityManager implements EntityManagementClient {
     Map<String, JsonData> params =
         Collections.singletonMap("lineageData", JsonData.of(JsonUtils.getMap(lineageData)));
 
-    UpdateByQueryResponse response =
-        client.updateByQuery(
-            u ->
-                u.index(indexName)
-                    .query(
-                        q ->
-                            q.match(
-                                m ->
-                                    m.field(fieldAndValue.getKey())
-                                        .query(FieldValue.of(fieldAndValue.getValue()))
-                                        .operator(Operator.And)))
-                    .script(
-                        s ->
-                            s.inline(
-                                inline ->
-                                    inline
-                                        .lang(
-                                            l ->
-                                                l.builtin(
-                                                    os.org.opensearch.client.opensearch._types
-                                                        .BuiltinScriptLanguage.Painless))
-                                        .source(ADD_UPDATE_LINEAGE)
-                                        .params(params)))
-                    .refresh(Refresh.True));
+    try {
+      if ("_id".equals(fieldAndValue.getKey())) {
+        String docId = fieldAndValue.getValue();
+        SearchRetryUtil.executeWithRetry(
+            () ->
+                client.update(
+                    u ->
+                        u.index(indexName)
+                            .id(docId)
+                            .refresh(Refresh.True)
+                            .retryOnConflict(3)
+                            .script(
+                                s ->
+                                    s.inline(
+                                        inline ->
+                                            inline
+                                                .lang(
+                                                    l ->
+                                                        l.builtin(
+                                                            os.org.opensearch.client.opensearch
+                                                                ._types.BuiltinScriptLanguage
+                                                                .Painless))
+                                                .source(ADD_UPDATE_LINEAGE)
+                                                .params(params))),
+                    Map.class));
+        LOG.info(
+            "Successfully updated lineage in OpenSearch for index: {}, docId: {}",
+            indexName,
+            docId);
+      } else {
+        UpdateByQueryResponse response =
+            client.updateByQuery(
+                u ->
+                    u.index(indexName)
+                        .query(
+                            q ->
+                                q.term(
+                                    t ->
+                                        t.field(fieldAndValue.getKey())
+                                            .value(FieldValue.of(fieldAndValue.getValue()))))
+                        .script(
+                            s ->
+                                s.inline(
+                                    inline ->
+                                        inline
+                                            .lang(
+                                                l ->
+                                                    l.builtin(
+                                                        os.org.opensearch.client.opensearch._types
+                                                            .BuiltinScriptLanguage.Painless))
+                                            .source(ADD_UPDATE_LINEAGE)
+                                            .params(params)))
+                        .refresh(Refresh.True));
 
-    LOG.info("Successfully updated lineage in OpenSearch for index: {}", indexName);
+        LOG.info("Successfully updated lineage in OpenSearch for index: {}", indexName);
 
-    if (!response.failures().isEmpty()) {
-      String failureDetails =
-          response.failures().stream()
-              .map(BulkByScrollFailure::toString)
-              .collect(Collectors.joining("; "));
-      LOG.error("Update lineage encountered failures: {}", failureDetails);
+        if (!response.failures().isEmpty()) {
+          String failureDetails =
+              response.failures().stream()
+                  .map(BulkByScrollFailure::toString)
+                  .collect(Collectors.joining("; "));
+          LOG.error("Update lineage encountered failures: {}", failureDetails);
+        }
+      }
+    } catch (OpenSearchException e) {
+      if (e.status() == 404) {
+        LOG.warn(
+            "Document not found during lineage update for index: {}, field: {}, value: {}. "
+                + "The document may not have been indexed yet.",
+            indexName,
+            fieldAndValue.getKey(),
+            fieldAndValue.getValue());
+      } else {
+        LOG.error(
+            "Failed to update lineage in OpenSearch for index: {}, field: {}, value: {}",
+            indexName,
+            fieldAndValue.getKey(),
+            fieldAndValue.getValue(),
+            e);
+      }
+    } catch (IOException e) {
+      LOG.error(
+          "Failed to update lineage in OpenSearch for index: {}, field: {}, value: {}",
+          indexName,
+          fieldAndValue.getKey(),
+          fieldAndValue.getValue(),
+          e);
     }
   }
 
