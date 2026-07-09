@@ -123,7 +123,8 @@ const MetadataUploadStatusCard = ({
               'metadata-upload-status-icon-success': isSuccess,
               'metadata-upload-status-icon-error': !isSuccess,
             }
-          )}>
+          )}
+        >
           {isSuccess ? (
             <Check className="text-white" size={16} />
           ) : (
@@ -143,7 +144,8 @@ const MetadataUploadStatusCard = ({
         data-testid="change-metadata-xml-btn"
         size="small"
         type="link"
-        onClick={onChangeFile}>
+        onClick={onChangeFile}
+      >
         {t('label.change-entity', { entity: t('label.file') })}
       </Button>
     </div>
@@ -609,6 +611,60 @@ const SSOConfigurationFormRJSF = ({
         'ui:hideError': true,
       };
 
+      // Discovery mode toggle: auto (well-known) vs manual (explicit endpoints).
+      // Clone before mutating - oidcConfiguration is a shared reference to the
+      // module-level OIDC_UI_SCHEMA constant (getSSOUISchema spreads shallowly).
+      const oidcConfig = authConfig.oidcConfiguration
+        ? ({
+            ...(authConfig.oidcConfiguration as UISchemaObject),
+          } as UISchemaObject)
+        : undefined;
+      const currentDiscoveryMode =
+        internalData?.authenticationConfiguration?.oidcConfiguration
+          ?.discoveryMode;
+      if (oidcConfig) {
+        authConfig.oidcConfiguration = oidcConfig;
+        if (currentDiscoveryMode === 'manual') {
+          // manual: hide discoveryUri; show manual endpoints + userInfoFieldMapping
+          oidcConfig.discoveryUri = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          authConfig.displayNameClaim = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+        } else {
+          // auto: hide manual endpoints + userInfoFieldMapping; show discoveryUri
+          oidcConfig.issuer = { 'ui:widget': 'hidden', 'ui:hideError': true };
+          oidcConfig.authorizationEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.tokenEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.userInfoEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.logoutEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.jwksUri = { 'ui:widget': 'hidden', 'ui:hideError': true };
+          oidcConfig.userInfoTokenHeaderType = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          authConfig.userInfoFieldMapping = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+        }
+      }
+
       // For Google, show authority even in Confidential mode
       const isGoogle = currentProvider === AuthProvider.Google;
       if (isGoogle) {
@@ -636,6 +692,7 @@ const SSOConfigurationFormRJSF = ({
   }, [
     currentProvider,
     internalData?.authenticationConfiguration?.clientType,
+    internalData?.authenticationConfiguration?.oidcConfiguration?.discoveryMode,
     hasExistingConfig,
     savedData,
     hideBorder,
@@ -980,7 +1037,8 @@ const SSOConfigurationFormRJSF = ({
     return (
       <Card
         className="sso-provider-selection flex-col"
-        data-testid="sso-configuration-form-card">
+        data-testid="sso-configuration-form-card"
+      >
         <ProviderSelector
           selectedProvider={currentProvider as AuthProvider}
           onProviderSelect={handleProviderSelect}
@@ -1008,24 +1066,29 @@ const SSOConfigurationFormRJSF = ({
               className="saml-metadata-upload-drop-zone"
               data-testid="file-uploader"
               multiple={false}
-              showUploadList={false}>
+              showUploadList={false}
+            >
               <div
                 className="flex flex-center flex-column gap-1"
-                data-testid="file-upload-drop-zone">
+                data-testid="file-upload-drop-zone"
+              >
                 <div
                   className="flex flex-shrink items-center justify-center bg-white border border-radius-xs"
-                  style={{ width: '40px', height: '40px' }}>
+                  style={{ width: '40px', height: '40px' }}
+                >
                   <UploadCloud02 className="text-grey-600" size={20} />
                 </div>
                 <div
                   className="flex align-center flex-wrap gap-4 justify-center"
-                  style={{ maxWidth: '220px' }}>
+                  style={{ maxWidth: '220px' }}
+                >
                   <Typography.Text className="font-medium">
                     {t('label.click-to')}{' '}
                     <Button
                       className="h-auto p-0 font-semibold"
                       size="small"
-                      type="link">
+                      type="link"
+                    >
                       {t('label.upload-lowercase')}
                     </Button>{' '}
                     {t('label.or-drag-and-drop-an-xml-file-here')}
@@ -1113,7 +1176,8 @@ const SSOConfigurationFormRJSF = ({
                       className="cancel-sso-configuration text-md"
                       data-testid="cancel-sso-configuration"
                       type="link"
-                      onClick={handleCancelClick}>
+                      onClick={handleCancelClick}
+                    >
                       {t('label.cancel')}
                     </Button>
                     <Button
@@ -1122,7 +1186,8 @@ const SSOConfigurationFormRJSF = ({
                       disabled={isLoading}
                       loading={isLoading}
                       type="primary"
-                      onClick={handleSave}>
+                      onClick={handleSave}
+                    >
                       {t('label.save')}
                     </Button>
                   </div>
@@ -1153,7 +1218,8 @@ const SSOConfigurationFormRJSF = ({
   const wrappedFormContent = (
     <Card
       className="sso-configuration-form-card flex-col p-0"
-      data-testid="sso-configuration-form-card">
+      data-testid="sso-configuration-form-card"
+    >
       {/* SSO Provider Header */}
       {currentProvider && (
         <div className="sso-provider-form-header flex items-center justify-between">
@@ -1176,7 +1242,8 @@ const SSOConfigurationFormRJSF = ({
             <Button
               data-testid="change-provider-button"
               type="link"
-              onClick={onChangeProvider}>
+              onClick={onChangeProvider}
+            >
               {t('label.change-provider')}
             </Button>
           )}
@@ -1213,7 +1280,8 @@ const SSOConfigurationFormRJSF = ({
                     className="cancel-sso-configuration text-md"
                     data-testid="cancel-sso-configuration"
                     type="link"
-                    onClick={handleCancelClick}>
+                    onClick={handleCancelClick}
+                  >
                     {t('label.cancel')}
                   </Button>
                   <Button
@@ -1222,7 +1290,8 @@ const SSOConfigurationFormRJSF = ({
                     disabled={isLoading}
                     loading={isLoading}
                     type="primary"
-                    onClick={handleSave}>
+                    onClick={handleSave}
+                  >
                     {t('label.save')}
                   </Button>
                 </div>

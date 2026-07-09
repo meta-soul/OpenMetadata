@@ -729,6 +729,9 @@ public class SystemResource {
       SecurityConfiguration updatedConfig =
           JsonUtils.readValue(jsonString, SecurityConfiguration.class);
 
+      systemRepository.autoPopulatePublicKeyUrlsIfNeeded(
+          updatedConfig.getAuthenticationConfiguration());
+
       String currentUsername = SecurityUtil.getUserName(securityContext);
       SecurityValidationResponse validationResponse =
           systemRepository.validateSecurityConfiguration(

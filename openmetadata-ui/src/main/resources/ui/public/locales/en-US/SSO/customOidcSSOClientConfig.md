@@ -31,6 +31,47 @@ $$section
 $$
 
 $$section
+## Discovery Mode $(id="discoveryMode")
+
+- **Definition:** How OpenMetadata resolves OIDC endpoints. `auto` uses `.well-known/openid-configuration` discovery; `manual` lets you specify endpoints explicitly.
+- **Default:** auto
+- **When to use manual:** Your IDP does not expose a `.well-known/openid-configuration` discovery document, or returns an opaque access_token (non-JWT) without id_token. In manual mode OpenMetadata calls the userinfo endpoint to obtain user attributes and self-signs an OM JWT for downstream API calls.
+- **Manual mode required fields:** Authorization Endpoint, Token Endpoint, Userinfo Endpoint
+- **Manual mode optional fields:** Issuer, Logout Endpoint, JWKS URI, Userinfo Token Header Type, User Info Field Mapping
+$$
+
+$$section
+## Manual Mode Endpoints $(id="manualEndpoints")
+
+- **Authorization Endpoint:** OAuth2 authorization endpoint URL (e.g. `https://sso.example.com/auth/api/oauth2/authorize`).
+- **Token Endpoint:** OAuth2 token endpoint URL (e.g. `https://sso.example.com/auth/api/oauth2/token`).
+- **Userinfo Endpoint:** OIDC userinfo endpoint URL (e.g. `https://sso.example.com/auth/api/oauth2/userinfo`). OpenMetadata calls this with the access_token to fetch user attributes.
+- **Issuer:** Issuer identifier URL. Falls back to the authorization endpoint if not set.
+- **Logout Endpoint:** OIDC end-session endpoint URL (optional).
+- **JWKS URI:** Optional. If provided, auto-fills `publicKeyUrls`. If empty, OpenMetadata keeps its own JWKS so `JwtFilter` validates the OM self-signed JWT.
+- **Userinfo Token Header Type:** `bearer` sends `Authorization: Bearer <token>`; `raw` sends `Authorization: <token>` (no prefix). Use `raw` for IDPs that expect the bare token.
+$$
+
+$$section
+## User Info Field Mapping $(id="userInfoFieldMapping")
+
+- **Definition:** Maps userinfo response fields to OpenMetadata user attributes (manual mode only). Aligns with the `name_field`/`display_name_field`/`uid_field` pattern.
+- **userNameField:** userinfo field for `User.name` (lookup key for pre-synced users). Example: `name`.
+- **emailField:** userinfo field for `User.email`. Default: `email`.
+- **displayNameField:** userinfo field for `User.displayName`. Example: `nickname`.
+- **userIdField:** userinfo field for the IDP user id (e.g. `sub`). Optional, reference only — OpenMetadata User has no uid column.
+- **Pre-synced users:** If users are synced into OpenMetadata in advance (`User.name` = IDP name/id, `User.displayName` = display name), login looks up the existing user by `userNameField` and backfills `displayName` only when empty.
+$$
+
+$$section
+## Display Name Claim $(id="displayNameClaim")
+
+- **Definition:** Claim name in the id_token for user display name (auto mode only, e.g. `nickname`, `name`). Manual mode uses `userInfoFieldMapping.displayNameField` instead.
+- **Why it matters:** Populates `User.displayName` during OIDC login (the default OIDC flow does not populate it).
+- **Optional:** Leave empty to keep existing behavior.
+$$
+
+$$section
 ## Callback URL / Redirect URI $(id="callbackUrl")
 
 - **Definition:** URL where the OIDC provider redirects after authentication.

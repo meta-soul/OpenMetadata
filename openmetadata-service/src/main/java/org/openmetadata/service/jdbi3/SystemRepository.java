@@ -1248,15 +1248,41 @@ public class SystemRepository {
       return;
     }
 
+    OidcClientConfig oidcConfig = authConfig.getOidcConfiguration();
+    if (oidcConfig == null) {
+      LOG.warn("Cannot auto-populate publicKeyUrls - missing oidcConfiguration");
+      return;
+    }
+
+    // Manual mode issues OM-signed JWTs (userinfo + JWTTokenGenerator). JwtFilter must verify
+    // against OM JWKS — not the IDP jwksUri (ingestion-bot and SSO sessions use OM RS256 keys).
+    if (oidcConfig.getDiscoveryMode() != null
+        && "manual".equalsIgnoreCase(oidcConfig.getDiscoveryMode().value())) {
+      if (!nullOrEmpty(oidcConfig.getServerUrl())) {
+        String serverUrl = oidcConfig.getServerUrl();
+        String omJwksUrl =
+            (serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl)
+                + "/api/v1/system/config/jwks";
+        authConfig.setPublicKeyUrls(List.of(omJwksUrl));
+        LOG.info(
+            "Manual mode - populated publicKeyUrls with OM JWKS {} for provider: {}",
+            omJwksUrl,
+            authConfig.getProvider());
+      } else {
+        LOG.warn(
+            "Manual mode without serverUrl - publicKeyUrls remains empty; JWT validation will fail");
+      }
+      return;
+    }
+
     // Skip if already populated
     if (authConfig.getPublicKeyUrls() != null && !authConfig.getPublicKeyUrls().isEmpty()) {
       LOG.debug("publicKeyUrls already populated, skipping auto-population");
       return;
     }
 
-    OidcClientConfig oidcConfig = authConfig.getOidcConfiguration();
-    if (oidcConfig == null || nullOrEmpty(oidcConfig.getDiscoveryUri())) {
-      LOG.warn("Cannot auto-populate publicKeyUrls - missing oidcConfiguration or discoveryUri");
+    if (nullOrEmpty(oidcConfig.getDiscoveryUri())) {
+      LOG.warn("Cannot auto-populate publicKeyUrls - missing discoveryUri");
       return;
     }
 

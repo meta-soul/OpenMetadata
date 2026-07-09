@@ -7,6 +7,7 @@ import static org.openmetadata.service.security.JwtFilter.USERNAME_CLAIM_KEY;
 import static org.openmetadata.service.security.SecurityUtil.findEmailFromClaims;
 import static org.openmetadata.service.security.SecurityUtil.findTeamsFromClaims;
 import static org.openmetadata.service.security.SecurityUtil.findUserNameFromClaims;
+import static org.openmetadata.service.security.SecurityUtil.getClaimOrObject;
 import static org.openmetadata.service.security.SecurityUtil.writeJsonResponse;
 import static org.openmetadata.service.util.UserUtil.getRoleListFromUser;
 import static org.pac4j.core.util.CommonHelper.assertNotNull;
@@ -24,7 +25,9 @@ import com.nimbusds.oauth2.sdk.AuthorizationCode;
 import com.nimbusds.oauth2.sdk.AuthorizationCodeGrant;
 import com.nimbusds.oauth2.sdk.AuthorizationGrant;
 import com.nimbusds.oauth2.sdk.ErrorObject;
+import com.nimbusds.oauth2.sdk.GrantType;
 import com.nimbusds.oauth2.sdk.RefreshTokenGrant;
+import com.nimbusds.oauth2.sdk.ResponseType;
 import com.nimbusds.oauth2.sdk.TokenErrorResponse;
 import com.nimbusds.oauth2.sdk.TokenRequest;
 import com.nimbusds.oauth2.sdk.TokenResponse;
@@ -37,6 +40,7 @@ import com.nimbusds.oauth2.sdk.auth.Secret;
 import com.nimbusds.oauth2.sdk.http.HTTPRequest;
 import com.nimbusds.oauth2.sdk.http.HTTPResponse;
 import com.nimbusds.oauth2.sdk.id.ClientID;
+import com.nimbusds.oauth2.sdk.id.Issuer;
 import com.nimbusds.oauth2.sdk.id.State;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallenge;
 import com.nimbusds.oauth2.sdk.pkce.CodeChallengeMethod;
@@ -53,6 +57,7 @@ import com.nimbusds.openid.connect.sdk.AuthenticationSuccessResponse;
 import com.nimbusds.openid.connect.sdk.Nonce;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponse;
 import com.nimbusds.openid.connect.sdk.OIDCTokenResponseParser;
+import com.nimbusds.openid.connect.sdk.SubjectType;
 import com.nimbusds.openid.connect.sdk.op.OIDCProviderMetadata;
 import com.nimbusds.openid.connect.sdk.token.OIDCTokens;
 import com.nimbusds.openid.connect.sdk.validators.BadJWTExceptions;
@@ -67,6 +72,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.text.ParseException;
@@ -92,6 +98,7 @@ import net.minidev.json.JSONObject;
 import org.openmetadata.schema.api.configuration.MCPConfiguration;
 import org.openmetadata.schema.api.security.AuthenticationConfiguration;
 import org.openmetadata.schema.api.security.AuthorizerConfiguration;
+import org.openmetadata.schema.api.security.UserInfoFieldMapping;
 import org.openmetadata.schema.auth.JWTAuthMechanism;
 import org.openmetadata.schema.auth.ServiceTokenType;
 import org.openmetadata.schema.entity.teams.Role;
@@ -274,9 +281,18 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
         configuration.setScope(scope);
       }
 
-      String discoveryUri = clientConfig.getDiscoveryUri();
-      if (CommonHelper.isNotBlank(discoveryUri)) {
-        configuration.setDiscoveryURI(discoveryUri);
+      String discoveryMode =
+          clientConfig.getDiscoveryMode() != null
+              ? clientConfig.getDiscoveryMode().value()
+              : "auto";
+      if ("manual".equalsIgnoreCase(discoveryMode)) {
+        OIDCProviderMetadata metadata = buildManualProviderMetadata(clientConfig);
+        configuration.setProviderMetadata(metadata);
+      } else {
+        String discoveryUri = clientConfig.getDiscoveryUri();
+        if (CommonHelper.isNotBlank(discoveryUri)) {
+          configuration.setDiscoveryURI(discoveryUri);
+        }
       }
 
       String useNonce = clientConfig.getUseNonce();
@@ -294,7 +310,10 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
         configuration.setMaxClockSkew(Integer.parseInt(maxClockSkew));
       }
 
-      String clientAuthenticationMethod = clientConfig.getClientAuthenticationMethod().value();
+      String clientAuthenticationMethod =
+          clientConfig.getClientAuthenticationMethod() != null
+              ? clientConfig.getClientAuthenticationMethod().value()
+              : "client_secret_post";
       if (CommonHelper.isNotBlank(clientAuthenticationMethod)) {
         configuration.setClientAuthenticationMethod(
             ClientAuthenticationMethod.parse(clientAuthenticationMethod));
@@ -353,6 +372,50 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
     }
     throw new IllegalArgumentException(
         "Client ID and Client Secret is required to create OidcClient");
+  }
+
+  private OIDCProviderMetadata buildManualProviderMetadata(OidcClientConfig clientConfig) {
+    try {
+      String issuerStr = clientConfig.getIssuer();
+      if (nullOrEmpty(issuerStr)) {
+        issuerStr = clientConfig.getAuthorizationEndpoint();
+      }
+      Issuer issuer = new Issuer(issuerStr);
+
+      String jwksStr = clientConfig.getJwksUri();
+      if (nullOrEmpty(jwksStr)) {
+        String baseIssuer =
+            issuerStr.endsWith("/") ? issuerStr.substring(0, issuerStr.length() - 1) : issuerStr;
+        jwksStr = baseIssuer + "/.well-known/jwks";
+      }
+      // Nimbus 3-arg constructor expects JWKS URI, not the authorization endpoint.
+      OIDCProviderMetadata metadata =
+          new OIDCProviderMetadata(issuer, List.of(SubjectType.PUBLIC), new URI(jwksStr));
+
+      metadata.setAuthorizationEndpointURI(new URI(clientConfig.getAuthorizationEndpoint()));
+      metadata.setTokenEndpointURI(new URI(clientConfig.getTokenEndpoint()));
+      if (!nullOrEmpty(clientConfig.getUserInfoEndpoint())) {
+        metadata.setUserInfoEndpointURI(new URI(clientConfig.getUserInfoEndpoint()));
+      }
+      if (!nullOrEmpty(clientConfig.getLogoutEndpoint())) {
+        metadata.setEndSessionEndpointURI(new URI(clientConfig.getLogoutEndpoint()));
+      }
+      String responseTypeStr = clientConfig.getResponseType();
+      ResponseType rt =
+          nullOrEmpty(responseTypeStr)
+              ? ResponseType.parse("code")
+              : ResponseType.parse(responseTypeStr);
+      metadata.setResponseTypes(List.of(rt));
+      metadata.setGrantTypes(List.of(GrantType.AUTHORIZATION_CODE, GrantType.REFRESH_TOKEN));
+      String authMethod =
+          clientConfig.getClientAuthenticationMethod() != null
+              ? clientConfig.getClientAuthenticationMethod().value()
+              : "client_secret_post";
+      metadata.setTokenEndpointAuthMethods(List.of(ClientAuthenticationMethod.parse(authMethod)));
+      return metadata;
+    } catch (URISyntaxException | com.nimbusds.oauth2.sdk.ParseException e) {
+      throw new IllegalArgumentException("Invalid manual OIDC configuration: " + e.getMessage(), e);
+    }
   }
 
   // Login
@@ -589,27 +652,49 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
   }
 
   private String buildLoginAuthenticationRequestUrl(final Map<String, String> params) {
-    // Build authentication request query string
-    String queryString;
-    try {
-      queryString =
-          AuthenticationRequest.parse(
-                  params.entrySet().stream()
-                      .collect(
-                          Collectors.toMap(
-                              Map.Entry::getKey, e -> Collections.singletonList(e.getValue()))))
-              .toQueryString();
-    } catch (Exception e) {
-      throw new TechnicalException(e);
-    }
-    return client.getConfiguration().getProviderMetadata().getAuthorizationEndpointURI().toString()
+    String queryString = toAuthorizationQueryString(params);
+    return client.getConfiguration().findProviderMetadata().getAuthorizationEndpointURI().toString()
         + '?'
         + queryString;
   }
 
+  /**
+   * Builds the authorization request query string. Nimbus {@link AuthenticationRequest} requires a
+   * scope parameter, but some OAuth2 providers (e.g. chagee SSO) reject {@code openid} and only work
+   * without a scope. When scope is omitted, build the query string directly.
+   */
+  static String toAuthorizationQueryString(final Map<String, String> params) {
+    String scope = params.get(OidcConfiguration.SCOPE);
+    if (!nullOrEmpty(scope)) {
+      try {
+        return AuthenticationRequest.parse(
+                params.entrySet().stream()
+                    .filter(e -> !nullOrEmpty(e.getValue()))
+                    .collect(
+                        Collectors.toMap(
+                            Map.Entry::getKey, e -> Collections.singletonList(e.getValue()))))
+            .toQueryString();
+      } catch (Exception e) {
+        throw new TechnicalException(e);
+      }
+    }
+
+    return params.entrySet().stream()
+        .filter(e -> !nullOrEmpty(e.getValue()))
+        .map(
+            e ->
+                URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8)
+                    + '='
+                    + URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+        .collect(Collectors.joining("&"));
+  }
+
   private Map<String, String> buildLoginParams() {
     Map<String, String> authParams = new HashMap<>();
-    authParams.put(OidcConfiguration.SCOPE, client.getConfiguration().getScope());
+    String scope = client.getConfiguration().getScope();
+    if (!nullOrEmpty(scope)) {
+      authParams.put(OidcConfiguration.SCOPE, scope);
+    }
     authParams.put(OidcConfiguration.RESPONSE_TYPE, client.getConfiguration().getResponseType());
     authParams.put(OidcConfiguration.RESPONSE_MODE, "query");
     authParams.putAll(client.getConfiguration().getCustomParams());
@@ -706,6 +791,11 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
 
   private void validateNonceIfRequired(HttpSession session, JWTClaimsSet claimsSet)
       throws BadJOSEException {
+    // OM self-signed JWTs (manual mode, opaque IDP tokens) carry a tokenType claim and no
+    // nonce; nonce validation only applies to id_tokens issued by the external IDP.
+    if (claimsSet.getClaim(JWTTokenGenerator.TOKEN_TYPE) != null) {
+      return;
+    }
     if (client.getConfiguration().isUseNonce()) {
       String expectedNonce = (String) session.getAttribute(client.getNonceSessionAttributeName());
       if (CommonHelper.isNotBlank(expectedNonce)) {
@@ -839,7 +929,11 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
   public static void getErrorMessage(HttpServletResponse resp, Exception e) {
     resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     resp.setContentType("text/html; charset=UTF-8");
-    LOG.error("[Auth Callback Servlet] Failed in Auth Login", e);
+    LOG.error(
+        "[Auth Callback Servlet] Failed in Auth Login: {} - {}",
+        e.getClass().getSimpleName(),
+        e.getMessage(),
+        e);
     resp.getOutputStream()
         .println("<p> [Auth Callback Servlet] Authentication failed. Please try again. </p>");
   }
@@ -851,8 +945,15 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
     Map<String, Object> claims = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     claims.putAll(jwt.getJWTClaimsSet().getClaims());
 
-    String userName = findUserNameFromClaims(claimsMapping, claimsOrder, claims);
-    String email = findEmailFromClaims(claimsMapping, claimsOrder, claims, principalDomain);
+    String userName;
+    String email;
+    if (isOmIssuedJwt(claims)) {
+      userName = extractUserNameFromOmJwt(claims);
+      email = extractEmailFromOmJwt(claims);
+    } else {
+      userName = findUserNameFromClaims(claimsMapping, claimsOrder, claims);
+      email = findEmailFromClaims(claimsMapping, claimsOrder, claims, principalDomain);
+    }
 
     String redirectUri = (String) httpSession.getAttribute(SESSION_REDIRECT_URI);
     if (redirectUri == null || redirectUri.trim().isEmpty()) {
@@ -879,6 +980,32 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
     response.sendRedirect(url);
   }
 
+  private static boolean isOmIssuedJwt(Map<String, Object> claims) {
+    return claims.get(JWTTokenGenerator.TOKEN_TYPE) != null;
+  }
+
+  private static String extractUserNameFromOmJwt(Map<String, Object> claims) {
+    String userName = getClaimOrObject(claims.get("sub"));
+    if (nullOrEmpty(userName)) {
+      userName = getClaimOrObject(claims.get(USERNAME_CLAIM_KEY));
+    }
+    if (nullOrEmpty(userName)) {
+      userName = getClaimOrObject(claims.get("preferred_username"));
+    }
+    if (nullOrEmpty(userName)) {
+      throw new AuthenticationException("Invalid OM JWT token, username claim is not present");
+    }
+    return userName.toLowerCase();
+  }
+
+  private static String extractEmailFromOmJwt(Map<String, Object> claims) {
+    String email = getClaimOrObject(claims.get(EMAIL_CLAIM_KEY));
+    if (nullOrEmpty(email)) {
+      throw new AuthenticationException("Invalid OM JWT token, email claim is not present");
+    }
+    return email.toLowerCase();
+  }
+
   private User getOrCreateOidcUser(String userName, String email, Map<String, Object> claims) {
     // Extract teams from claims if configured (supports array claims like groups)
     List<String> teamsFromClaim = findTeamsFromClaims(teamClaimMapping, claims);
@@ -892,7 +1019,7 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
           userRepo.getByName(
               null,
               userName,
-              userRepo.getFieldsWithUserAuth("id,roles,teams"),
+              userRepo.getFieldsWithUserAuth("id,roles,teams,displayName"),
               Include.NON_DELETED,
               true);
 
@@ -915,6 +1042,19 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
       // Assign teams from claims if provided (this only adds, doesn't remove existing teams)
       boolean teamsAssigned = UserUtil.assignTeamsFromClaim(user, teamsFromClaim);
       needsUpdate = needsUpdate || teamsAssigned;
+
+      // Backfill displayName when empty: prefer DB value, fall back to SSO claim
+      // (aligns with lakeinsight get_ssouser line 472-474)
+      if (nullOrEmpty(user.getDisplayName())) {
+        String displayName =
+            SecurityUtil.extractDisplayNameFromClaims(
+                claims, authenticationConfiguration.getDisplayNameClaim());
+        if (!nullOrEmpty(displayName)) {
+          LOG.debug("Backfilling displayName for existing user {}: {}", userName, displayName);
+          user.setDisplayName(displayName);
+          needsUpdate = true;
+        }
+      }
 
       if (needsUpdate) {
         UserUtil.addOrUpdateUser(user);
@@ -944,6 +1084,12 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
 
       User newUser =
           UserUtil.user(userName, domain, userName).withIsAdmin(isAdmin).withIsEmailVerified(true);
+      String displayName =
+          SecurityUtil.extractDisplayNameFromClaims(
+              claims, authenticationConfiguration.getDisplayNameClaim());
+      if (!nullOrEmpty(displayName)) {
+        newUser.setDisplayName(displayName);
+      }
 
       // Assign default role if configured
       String defaultRoleName = authorizerConfiguration.getDefaultOAuthRole();
@@ -1002,6 +1148,9 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
                   parseTokenResponseFromHttpResponse(httpResponse);
               // Populate credentials
               populateCredentialsFromTokenResponse(tokenSuccessResponse, credentials);
+              if (isManualDiscoveryMode()) {
+                handleManualModeUserInfo(credentials);
+              }
             }
           } else {
             // Note: since the id_token is not present, we must receive accessToken
@@ -1182,6 +1331,8 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
           OidcConfiguration.CODE_CHALLENGE,
           CodeChallenge.compute(pkceMethod, verfifier).getValue());
       params.put(OidcConfiguration.CODE_CHALLENGE_METHOD, pkceMethod.getValue());
+    } else {
+      session.removeAttribute(client.getCodeVerifierSessionAttributeName());
     }
   }
 
@@ -1194,11 +1345,84 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
     // Populate credentials
     populateCredentialsFromTokenResponse(tokenSuccessResponse, credentials);
 
+    // Manual mode: always fetch userinfo and self-sign an OM JWT. IDPs without JWKS may still
+    // return an id_token (e.g. ES256) that JwtFilter cannot verify; ignore it and use OM keys.
+    if (isManualDiscoveryMode()) {
+      handleManualModeUserInfo(credentials);
+      return;
+    }
+
+    if (credentials.getIdToken() == null) {
+      throw new TechnicalException(
+          "Token response is missing id_token. Ensure the 'openid' scope is configured, or use"
+              + " manual discovery mode for providers that return opaque access tokens.");
+    }
+
     // Check expiry, azure on first go itself is returning a expried token sometimes
     Date expirationTime = credentials.getIdToken().getJWTClaimsSet().getExpirationTime();
     if (expirationTime != null
         && expirationTime.before(Calendar.getInstance(TimeZone.getTimeZone("UTC")).getTime())) {
       renewOidcCredentials(session, credentials);
+    }
+  }
+
+  private boolean isManualDiscoveryMode() {
+    OidcClientConfig oidcConfig = authenticationConfiguration.getOidcConfiguration();
+    return oidcConfig != null
+        && oidcConfig.getDiscoveryMode() != null
+        && "manual".equalsIgnoreCase(oidcConfig.getDiscoveryMode().value());
+  }
+
+  private void handleManualModeUserInfo(OidcCredentials credentials) {
+    OidcClientConfig oidcConfig = authenticationConfiguration.getOidcConfiguration();
+    UserInfoFieldMapping mapping = authenticationConfiguration.getUserInfoFieldMapping();
+    String accessToken =
+        credentials.getAccessToken() != null ? credentials.getAccessToken().getValue() : null;
+    UserInfoFetcher.UserInfoResult result =
+        new UserInfoFetcher().fetchUserInfo(accessToken, oidcConfig, mapping);
+    if (result == null || nullOrEmpty(result.getUserName())) {
+      throw new TechnicalException(
+          "Failed to fetch userinfo for manual OIDC mode. Ensure userInfoEndpoint and"
+              + " userInfoFieldMapping are correctly configured.");
+    }
+
+    // userInfoFieldMapping is an explicit mapping, so use the extracted values directly
+    // instead of the jwtPrincipalClaims lookup. IDPs like this one return no email in
+    // userinfo, so synthesize one from principalDomain (aligns with findEmailFromClaims).
+    String userName = result.getUserName().toLowerCase();
+    String email =
+        !nullOrEmpty(result.getEmail())
+            ? result.getEmail().toLowerCase()
+            : String.format("%s@%s", userName, principalDomain).toLowerCase();
+
+    // Claims map feeds displayName extraction and team assignment downstream.
+    Map<String, Object> claims = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    claims.put(USERNAME_CLAIM_KEY, userName);
+    claims.put(EMAIL_CLAIM_KEY, email);
+    if (!nullOrEmpty(result.getDisplayName())) {
+      String displayNameField =
+          mapping != null && !nullOrEmpty(mapping.getDisplayNameField())
+              ? mapping.getDisplayNameField()
+              : "nickname";
+      claims.put(displayNameField, result.getDisplayName());
+    }
+
+    User user = getOrCreateOidcUser(userName, email, claims);
+
+    JWTAuthMechanism jwtAuthMechanism =
+        JWTTokenGenerator.getInstance()
+            .generateJWTToken(
+                userName,
+                getRoleListFromUser(user),
+                !nullOrEmpty(user.getIsAdmin()) && user.getIsAdmin(),
+                user.getEmail(),
+                tokenValidity,
+                false,
+                ServiceTokenType.OM_USER);
+    try {
+      credentials.setIdToken(SignedJWT.parse(jwtAuthMechanism.getJWTToken()));
+    } catch (ParseException e) {
+      throw new TechnicalException("Failed to parse self-signed OM JWT", e);
     }
   }
 

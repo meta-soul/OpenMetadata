@@ -253,12 +253,22 @@ public final class SecurityUtil {
    * @param claims Map of claims from the SSO token (typically from profile scope)
    * @return The extracted display name, or null if no suitable claims found
    */
+  public static String extractDisplayNameFromClaims(Map<String, ?> claims, String preferredClaim) {
+    if (claims != null && !nullOrEmpty(preferredClaim)) {
+      String preferred = getClaimOrObject(claims.get(preferredClaim));
+      if (!nullOrEmpty(preferred)) {
+        return preferred.trim();
+      }
+    }
+    return extractDisplayNameFromClaims(claims);
+  }
+
   public static String extractDisplayNameFromClaims(Map<String, ?> claims) {
     if (claims == null || claims.isEmpty()) {
       return null;
     }
 
-    // Try direct name claims (name, displayName, displayname)
+    // Try direct name claims (name, displayName, displayname, nickname)
     String nameClaim = getClaimOrObject(claims.get("name"));
     if (!nullOrEmpty(nameClaim)) {
       return nameClaim.trim();
@@ -267,6 +277,11 @@ public final class SecurityUtil {
     String displayNameClaim = getClaimOrObject(claims.get("displayname"));
     if (!nullOrEmpty(displayNameClaim)) {
       return displayNameClaim.trim();
+    }
+
+    String nicknameClaim = getClaimOrObject(claims.get("nickname"));
+    if (!nullOrEmpty(nicknameClaim)) {
+      return nicknameClaim.trim();
     }
 
     // Fall back to combining first + last name variations

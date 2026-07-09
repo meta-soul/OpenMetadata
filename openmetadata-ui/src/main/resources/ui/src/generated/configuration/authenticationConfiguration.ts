@@ -67,6 +67,14 @@ export interface AuthenticationConfiguration {
      * Oidc Configuration for Confidential Client Type
      */
     oidcConfiguration?: OidcClientConfig;
+    /**
+     * Mapping of userinfo response fields to OpenMetadata user attributes. Used in manual discovery mode. Aligns with lakeinsight name_field/display_name_field/uid_field.
+     */
+    userInfoFieldMapping?: UserInfoFieldMapping;
+    /**
+     * Claim name in id_token for user display name (auto mode only, e.g. nickname, name). Optional. Manual mode uses userInfoFieldMapping.displayNameField instead.
+     */
+    displayNameClaim?: string;
     provider:           AuthProvider;
     /**
      * Custom OIDC Authentication Provider Name
@@ -305,13 +313,33 @@ export interface OidcClientConfig {
      */
     disablePkce?: boolean;
     /**
-     * Discovery Uri for the Client.
+     * OAuth2 authorization endpoint URL. Required in manual mode.
      */
-    discoveryUri: string;
+    authorizationEndpoint?: string;
+    /**
+     * OIDC endpoint resolution mode: auto (well-known discovery) or manual (explicit endpoints). Defaults to auto for backward compatibility.
+     */
+    discoveryMode?: DiscoveryMode;
+    /**
+     * Discovery Uri for the Client. Required when discoveryMode is auto.
+     */
+    discoveryUri?: string;
     /**
      * Client ID.
      */
     id: string;
+    /**
+     * Issuer identifier URL. Used in manual mode to build OIDCProviderMetadata.
+     */
+    issuer?: string;
+    /**
+     * JWKS URI. Optional, manual mode. If provided, auto-fills publicKeyUrls for JwtFilter validation.
+     */
+    jwksUri?: string;
+    /**
+     * OIDC end-session / logout endpoint URL. Optional, used in manual mode.
+     */
+    logoutEndpoint?: string;
     /**
      * Validity for the JWT Token created from SAML Response
      */
@@ -364,6 +392,56 @@ export interface OidcClientConfig {
      * Use Nonce.
      */
     useNonce?: string;
+    /**
+     * OAuth2 token endpoint URL. Required in manual mode.
+     */
+    tokenEndpoint?: string;
+    /**
+     * OIDC userinfo endpoint URL. Required in manual mode.
+     */
+    userInfoEndpoint?: string;
+    /**
+     * How to send token in userinfo request header: bearer (Authorization: Bearer &lt;token&gt;) or raw (Authorization: &lt;token&gt;). Defaults to bearer.
+     */
+    userInfoTokenHeaderType?: UserInfoTokenHeaderType;
+}
+
+/**
+ * OIDC endpoint resolution mode.
+ */
+export enum DiscoveryMode {
+    Auto = "auto",
+    Manual = "manual",
+}
+
+/**
+ * How to send token in userinfo request header.
+ */
+export enum UserInfoTokenHeaderType {
+    Bearer = "bearer",
+    Raw = "raw",
+}
+
+/**
+ * Mapping of userinfo response fields to OpenMetadata user attributes. Used in manual discovery mode.
+ */
+export interface UserInfoFieldMapping {
+    /**
+     * userinfo field for OM User.displayName. Aligns with lakeinsight display_name_field.
+     */
+    displayNameField?: string;
+    /**
+     * userinfo field for OM User.email.
+     */
+    emailField?:      string;
+    /**
+     * userinfo field for IDP user id. Aligns with lakeinsight uid_field. Optional, for reference only.
+     */
+    userIdField?: string;
+    /**
+     * userinfo field for OM User.name (lookup key). Aligns with lakeinsight name_field.
+     */
+    userNameField?: string;
 }
 
 /**

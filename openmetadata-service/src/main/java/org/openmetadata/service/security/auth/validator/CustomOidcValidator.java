@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.openmetadata.schema.api.security.AuthenticationConfiguration;
+import org.openmetadata.schema.api.security.ClientType;
 import org.openmetadata.schema.security.client.OidcClientConfig;
 import org.openmetadata.schema.system.FieldError;
 import org.openmetadata.schema.utils.JsonUtils;
@@ -38,6 +39,9 @@ public class CustomOidcValidator {
   private FieldError validateCustomOidcPublicClient(
       AuthenticationConfiguration authConfig, OidcClientConfig oidcConfig) {
     try {
+      if (isManualMode(oidcConfig)) {
+        return validateManualMode(authConfig, oidcConfig);
+      }
       String discoveryUri = extractDiscoveryUri(authConfig, oidcConfig);
       if (nullOrEmpty(discoveryUri)) {
         return ValidationErrorBuilder.createFieldError(
@@ -84,6 +88,9 @@ public class CustomOidcValidator {
   private FieldError validateCustomOidcConfidentialClient(
       AuthenticationConfiguration authConfig, OidcClientConfig oidcConfig) {
     try {
+      if (isManualMode(oidcConfig)) {
+        return validateManualMode(authConfig, oidcConfig);
+      }
       String discoveryUri = extractDiscoveryUri(authConfig, oidcConfig);
       if (nullOrEmpty(discoveryUri)) {
         return ValidationErrorBuilder.createFieldError(
@@ -142,6 +149,43 @@ public class CustomOidcValidator {
           "authenticationConfiguration",
           "Custom OIDC confidential client validation failed: " + e.getMessage());
     }
+  }
+
+  private boolean isManualMode(OidcClientConfig oidcConfig) {
+    return oidcConfig.getDiscoveryMode() != null
+        && "manual".equalsIgnoreCase(oidcConfig.getDiscoveryMode().value());
+  }
+
+  private FieldError validateManualMode(
+      AuthenticationConfiguration authConfig, OidcClientConfig oidcConfig) {
+    if (nullOrEmpty(oidcConfig.getAuthorizationEndpoint())) {
+      return ValidationErrorBuilder.createFieldError(
+          "authenticationConfiguration.oidcConfiguration.authorizationEndpoint",
+          "Authorization endpoint is required in manual discovery mode");
+    }
+    if (nullOrEmpty(oidcConfig.getTokenEndpoint())) {
+      return ValidationErrorBuilder.createFieldError(
+          "authenticationConfiguration.oidcConfiguration.tokenEndpoint",
+          "Token endpoint is required in manual discovery mode");
+    }
+    if (nullOrEmpty(oidcConfig.getUserInfoEndpoint())) {
+      return ValidationErrorBuilder.createFieldError(
+          "authenticationConfiguration.oidcConfiguration.userInfoEndpoint",
+          "Userinfo endpoint is required in manual discovery mode");
+    }
+    if (authConfig.getClientType() == ClientType.CONFIDENTIAL) {
+      if (nullOrEmpty(oidcConfig.getId())) {
+        return ValidationErrorBuilder.createFieldError(
+            ValidationErrorBuilder.FieldPaths.OIDC_CLIENT_ID,
+            "Client ID is required for confidential clients");
+      }
+      if (nullOrEmpty(oidcConfig.getSecret())) {
+        return ValidationErrorBuilder.createFieldError(
+            ValidationErrorBuilder.FieldPaths.OIDC_CLIENT_SECRET,
+            "Client Secret is required for confidential clients");
+      }
+    }
+    return null;
   }
 
   private String extractDiscoveryUri(
@@ -358,12 +402,9 @@ public class CustomOidcValidator {
               + "&client_secret="
               + URLEncoder.encode(clientSecret, StandardCharsets.UTF_8);
 
-      // Add scope if configured
+      // Add scope only when explicitly configured. Some providers reject openid on token exchange.
       if (!nullOrEmpty(configuredScope)) {
         requestBody += "&scope=" + URLEncoder.encode(configuredScope, StandardCharsets.UTF_8);
-      } else {
-        // Use minimal OIDC scope as default
-        requestBody += "&scope=openid";
       }
 
       Map<String, String> headers = new HashMap<>();
