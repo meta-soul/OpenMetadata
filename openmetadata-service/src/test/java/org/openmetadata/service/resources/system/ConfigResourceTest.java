@@ -173,8 +173,12 @@ class ConfigResourceTest extends OpenMetadataApplicationTest {
     assertEquals("", uiThemePreference.getCustomTheme().getErrorColor());
     assertEquals("", uiThemePreference.getCustomTheme().getWarningColor());
     assertEquals("", uiThemePreference.getCustomTheme().getInfoColor());
-    assertEquals("", uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
-    assertEquals("", uiThemePreference.getCustomLogoConfig().getCustomMonogramUrlPath());
+    assertEquals(
+        "/img/lakeinsight/logo.png",
+        uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
+    assertEquals(
+        "/img/lakeinsight/monogram.png",
+        uiThemePreference.getCustomLogoConfig().getCustomMonogramUrlPath());
   }
 
   @Test

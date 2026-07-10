@@ -51,7 +51,7 @@ const BrandImage: FC<BrandImageProps> = ({
 
   return (
     <img
-      alt={alt ?? 'OpenMetadata Logo'}
+      alt={alt ?? 'LakeInsight Logo'}
       className={className}
       data-testid={dataTestId ?? 'brand-logo-image'}
       height={height}

@@ -11,15 +11,14 @@
  *  limitations under the License.
  */
 
-import Icon from '@ant-design/icons/lib/components/Icon';
 import { Button, Col, Modal, Row, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { ReactComponent as LogoMonogram } from '../../../assets/svg/logo-monogram.svg';
 import brandClassBase from '../../../utils/BrandData/BrandClassBase';
 import { TourEndModalProps } from './TourEndModal.interface';
 
 const TourEndModal = ({ onSave, visible }: TourEndModalProps) => {
   const { t } = useTranslation();
+  const Monogram = brandClassBase.getMonogram().svg;
 
   return (
     <Modal
@@ -30,26 +29,29 @@ const TourEndModal = ({ onSave, visible }: TourEndModalProps) => {
           data-testid="saveButton"
           size="large"
           type="primary"
-          onClick={onSave}>
+          onClick={onSave}
+        >
           {t('label.explore-now')}
         </Button>
       }
       maskClosable={false}
-      open={visible}>
+      open={visible}
+    >
       <Row className="text-center" gutter={[16, 16]}>
         <Col className="mt-4" span={24}>
-          <Icon
+          <Monogram
             alt={t('label.open-metadata-logo')}
             className="align-middle"
-            component={LogoMonogram}
             data-testid="omd-logo"
-            style={{ fontSize: '70px' }}
+            height={70}
+            width={70}
           />
         </Col>
         <Col span={24}>
           <Typography
             className="text-base mt-5"
-            data-testid="tour-complete-message">
+            data-testid="tour-complete-message"
+          >
             {t('message.successfully-completed-the-tour')}
             <br />
             {t('message.get-started-with-open-metadata', {

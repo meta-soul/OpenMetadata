@@ -64,10 +64,12 @@ export const getInitOptions = (): InitOptions => {
       'tr-TR': { translation: trTR },
       'ar-SA': { translation: arSA },
     },
-    fallbackLng: ['en-US'],
+    lng: 'zh-CN',
+    fallbackLng: ['zh-CN'],
     detection: {
-      order: ['querystring', 'cookie', 'navigator'],
-      caches: ['cookie'], // cache user language on
+      // Prefer explicit user choice; default to zh-CN for LakeInsight builds
+      order: ['querystring', 'cookie'],
+      caches: ['cookie'],
     },
     interpolation: {
       escapeValue: false, // XSS safety provided by React

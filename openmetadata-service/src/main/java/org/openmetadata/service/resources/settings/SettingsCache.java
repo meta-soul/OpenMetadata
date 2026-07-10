@@ -134,9 +134,9 @@ public class SettingsCache {
                   new UiThemePreference()
                       .withCustomLogoConfig(
                           new LogoConfiguration()
-                              .withCustomLogoUrlPath("")
-                              .withCustomFaviconUrlPath("")
-                              .withCustomMonogramUrlPath(""))
+                              .withCustomLogoUrlPath("/img/lakeinsight/logo.png")
+                              .withCustomFaviconUrlPath("/img/lakeinsight/favicon.ico")
+                              .withCustomMonogramUrlPath("/img/lakeinsight/monogram.png"))
                       .withCustomTheme(
                           new ThemeConfiguration()
                               .withPrimaryColor("")

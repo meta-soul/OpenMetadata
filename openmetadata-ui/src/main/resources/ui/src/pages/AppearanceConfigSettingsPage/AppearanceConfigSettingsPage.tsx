@@ -125,9 +125,9 @@ const AppearanceConfigSettingsPage = () => {
     try {
       const configValues = {
         customLogoConfig: {
-          customLogoUrlPath: '',
-          customMonogramUrlPath: '',
-          customFaviconUrlPath: '',
+          customLogoUrlPath: '/img/lakeinsight/logo.png',
+          customMonogramUrlPath: '/img/lakeinsight/monogram.png',
+          customFaviconUrlPath: '/img/lakeinsight/favicon.ico',
         },
         customTheme: {
           primaryColor: '',
@@ -427,7 +427,8 @@ const AppearanceConfigSettingsPage = () => {
                   data-testid="reset-button"
                   loading={resetting}
                   type="primary"
-                  onClick={handleReset}>
+                  onClick={handleReset}
+                >
                   {t('label.reset')}
                 </Button>
               </Space>
@@ -443,11 +444,13 @@ const AppearanceConfigSettingsPage = () => {
             }}
             layout="vertical"
             onFinish={handleSave}
-            onValuesChange={handleValuesChange}>
+            onValuesChange={handleValuesChange}
+          >
             <div className="white-label-card-wrapper m-b-md">
               <Card
                 className="white-label-config-card"
-                title={t('label.custom-logo')}>
+                title={t('label.custom-logo')}
+              >
                 <Row className="w-full" gutter={[16, 16]}>
                   {customLogoFormFields.map((field) => {
                     return (
@@ -477,7 +480,8 @@ const AppearanceConfigSettingsPage = () => {
                 className="white-label-config-card"
                 title={
                   <Typography.Text>{t('label.custom-theme')}</Typography.Text>
-                }>
+                }
+              >
                 <Row className="w-full" gutter={[16, 16]}>
                   {themeFormFields.map((field) => {
                     const currentColor =
@@ -496,7 +500,8 @@ const AppearanceConfigSettingsPage = () => {
                                   background: currentColor,
                                   color: 'white',
                                   width: '86px',
-                                }}>
+                                }}
+                              >
                                 {startCase(
                                   toString(field.name).replace('Color', '')
                                 )}
@@ -516,7 +521,8 @@ const AppearanceConfigSettingsPage = () => {
                                   borderColor: currentColor,
                                   width: '86px',
                                 }}
-                                type="default">
+                                type="default"
+                              >
                                 {startCase(
                                   toString(field.name).replace('Color', '')
                                 )}
@@ -532,7 +538,8 @@ const AppearanceConfigSettingsPage = () => {
                                   color: currentColor,
                                   padding: 0,
                                 }}
-                                type="link">
+                                type="link"
+                              >
                                 {t('label.link')}
                               </Button>
                             </Card>
@@ -548,18 +555,21 @@ const AppearanceConfigSettingsPage = () => {
             <Space
               className="w-full justify-end appearance-cta-buttons"
               data-testid="cta-buttons"
-              size={16}>
+              size={16}
+            >
               <Button
                 data-testid="cancel-btn"
                 type="link"
-                onClick={() => navigate(-1)}>
+                onClick={() => navigate(-1)}
+              >
                 {t('label.cancel')}
               </Button>
               <Button
                 data-testid="save-btn"
                 htmlType="submit"
                 loading={loading}
-                type="primary">
+                type="primary"
+              >
                 {t('label.save')}
               </Button>
             </Space>

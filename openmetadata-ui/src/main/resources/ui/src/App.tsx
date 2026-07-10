@@ -93,9 +93,9 @@ const App: FC = () => {
     const faviconHref = isEmpty(
       applicationConfig?.customLogoConfig?.customFaviconUrlPath
     )
-      ? '/favicon.png'
+      ? '/img/lakeinsight/favicon.ico'
       : applicationConfig?.customLogoConfig?.customFaviconUrlPath ??
-        '/favicon.png';
+        '/img/lakeinsight/favicon.ico';
     const link = document.querySelectorAll('link[rel~="icon"]');
 
     if (!isEmpty(link)) {
@@ -128,7 +128,8 @@ const App: FC = () => {
                         horizontal: 'right',
                       }}
                       autoHideDuration={6000}
-                      maxSnack={3}>
+                      maxSnack={3}
+                    >
                       <AuthProvider childComponentType={AppRouter}>
                         <TourProvider>
                           <WebAnalyticsProvider>

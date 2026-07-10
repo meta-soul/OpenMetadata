@@ -226,8 +226,12 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
     assertEquals("", uiThemePreference.getCustomTheme().getErrorColor());
     assertEquals("", uiThemePreference.getCustomTheme().getWarningColor());
     assertEquals("", uiThemePreference.getCustomTheme().getInfoColor());
-    assertEquals("", uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
-    assertEquals("", uiThemePreference.getCustomLogoConfig().getCustomMonogramUrlPath());
+    assertEquals(
+        "/img/lakeinsight/logo.png",
+        uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
+    assertEquals(
+        "/img/lakeinsight/monogram.png",
+        uiThemePreference.getCustomLogoConfig().getCustomMonogramUrlPath());
   }
 
   @Test
@@ -348,7 +352,9 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
     UiThemePreference uiThemePreference =
         JsonUtils.convertValue(uiThemeSettings.getConfigValue(), UiThemePreference.class);
     assertEquals("", uiThemePreference.getCustomTheme().getPrimaryColor());
-    assertEquals("", uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
+    assertEquals(
+        "/img/lakeinsight/logo.png",
+        uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
   }
 
   @Order(3)
@@ -358,7 +364,9 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
     UiThemePreference uiThemePreference =
         JsonUtils.convertValue(uiThemeSettings.getConfigValue(), UiThemePreference.class);
     assertEquals("", uiThemePreference.getCustomTheme().getPrimaryColor());
-    assertEquals("", uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
+    assertEquals(
+        "/img/lakeinsight/logo.png",
+        uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
 
     uiThemePreference.getCustomTheme().setPrimaryColor("#FFFFFF");
     uiThemePreference.getCustomLogoConfig().setCustomLogoUrlPath("http://example.com/logo.png");
@@ -380,7 +388,7 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
         updatedUiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
     // reset to default
     uiThemePreference.getCustomTheme().setPrimaryColor("");
-    uiThemePreference.getCustomLogoConfig().setCustomLogoUrlPath("");
+    uiThemePreference.getCustomLogoConfig().setCustomLogoUrlPath("/img/lakeinsight/logo.png");
     updatedUiThemeSettings =
         new Settings()
             .withConfigType(SettingsType.CUSTOM_UI_THEME_PREFERENCE)
