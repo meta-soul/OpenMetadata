@@ -125,9 +125,9 @@ const AppearanceConfigSettingsPage = () => {
     try {
       const configValues = {
         customLogoConfig: {
-          customLogoUrlPath: '/img/lakeinsight/logo.png',
-          customMonogramUrlPath: '/img/lakeinsight/monogram.png',
-          customFaviconUrlPath: '/img/lakeinsight/favicon.ico',
+          customLogoUrlPath: '/assets/img/lakeinsight/logo.png',
+          customMonogramUrlPath: '/assets/img/lakeinsight/monogram.png',
+          customFaviconUrlPath: '/assets/img/lakeinsight/favicon.ico',
         },
         customTheme: {
           primaryColor: '',

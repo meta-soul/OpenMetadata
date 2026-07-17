@@ -227,10 +227,10 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
     assertEquals("", uiThemePreference.getCustomTheme().getWarningColor());
     assertEquals("", uiThemePreference.getCustomTheme().getInfoColor());
     assertEquals(
-        "/img/lakeinsight/logo.png",
+        "/assets/img/lakeinsight/logo.png",
         uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
     assertEquals(
-        "/img/lakeinsight/monogram.png",
+        "/assets/img/lakeinsight/monogram.png",
         uiThemePreference.getCustomLogoConfig().getCustomMonogramUrlPath());
   }
 
@@ -353,7 +353,7 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
         JsonUtils.convertValue(uiThemeSettings.getConfigValue(), UiThemePreference.class);
     assertEquals("", uiThemePreference.getCustomTheme().getPrimaryColor());
     assertEquals(
-        "/img/lakeinsight/logo.png",
+        "/assets/img/lakeinsight/logo.png",
         uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
   }
 
@@ -365,7 +365,7 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
         JsonUtils.convertValue(uiThemeSettings.getConfigValue(), UiThemePreference.class);
     assertEquals("", uiThemePreference.getCustomTheme().getPrimaryColor());
     assertEquals(
-        "/img/lakeinsight/logo.png",
+        "/assets/img/lakeinsight/logo.png",
         uiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
 
     uiThemePreference.getCustomTheme().setPrimaryColor("#FFFFFF");
@@ -388,7 +388,7 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
         updatedUiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
     // reset to default
     uiThemePreference.getCustomTheme().setPrimaryColor("");
-    uiThemePreference.getCustomLogoConfig().setCustomLogoUrlPath("/img/lakeinsight/logo.png");
+    uiThemePreference.getCustomLogoConfig().setCustomLogoUrlPath("/assets/img/lakeinsight/logo.png");
     updatedUiThemeSettings =
         new Settings()
             .withConfigType(SettingsType.CUSTOM_UI_THEME_PREFERENCE)

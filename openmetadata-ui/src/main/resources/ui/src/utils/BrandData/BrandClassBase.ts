@@ -11,6 +11,8 @@
  *  limitations under the License.
  */
 import { createElement, FC, ImgHTMLAttributes } from 'react';
+import LogoSrc from '../../assets/img/lakeinsight/logo.png';
+import MonogramSrc from '../../assets/img/lakeinsight/monogram.png';
 import WelcomeScreenSrc from '../../assets/img/welcome-screen.png';
 import { LAKEINSIGHT_BRANDING } from '../../constants/LakeInsightBranding.constants';
 
@@ -23,14 +25,15 @@ const BrandImg: FC<ImgHTMLAttributes<HTMLImageElement>> = (props) =>
 class BrandClassBase {
   public getMonogram() {
     return {
-      src: LAKEINSIGHT_BRANDING.monogramUrl,
+      // Bundled import is the reliable offline fallback; public URL is preferred when set.
+      src: MonogramSrc || LAKEINSIGHT_BRANDING.monogramUrl,
       svg: BrandImg,
     };
   }
 
   public getLogo() {
     return {
-      src: LAKEINSIGHT_BRANDING.logoUrl,
+      src: LogoSrc || LAKEINSIGHT_BRANDING.logoUrl,
       svg: BrandImg,
     };
   }

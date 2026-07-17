@@ -93,9 +93,11 @@ const App: FC = () => {
     const faviconHref = isEmpty(
       applicationConfig?.customLogoConfig?.customFaviconUrlPath
     )
-      ? '/img/lakeinsight/favicon.ico'
-      : applicationConfig?.customLogoConfig?.customFaviconUrlPath ??
-        '/img/lakeinsight/favicon.ico';
+      ? '/assets/img/lakeinsight/favicon.ico'
+      : applicationConfig?.customLogoConfig?.customFaviconUrlPath?.replace(
+          '/img/lakeinsight/',
+          '/assets/img/lakeinsight/'
+        ) ?? '/assets/img/lakeinsight/favicon.ico';
     const link = document.querySelectorAll('link[rel~="icon"]');
 
     if (!isEmpty(link)) {

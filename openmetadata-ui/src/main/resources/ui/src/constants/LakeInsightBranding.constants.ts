@@ -12,12 +12,26 @@
  */
 
 /**
- * LakeInsight offline branding assets packaged under public/img/lakeinsight.
- * These paths are served by the UI static assets and work without external network.
+ * LakeInsight offline branding assets under public/assets/img/lakeinsight.
+ * Paths use the /assets/ prefix so they match Vite hashed static routes that
+ * ingress/gateways typically allow (plain /img/* may be blocked and 404).
  */
 export const LAKEINSIGHT_BRANDING = {
   pageTitle: 'LakeInsight',
-  logoUrl: '/img/lakeinsight/logo.png',
-  monogramUrl: '/img/lakeinsight/monogram.png',
-  faviconUrl: '/img/lakeinsight/favicon.ico',
+  logoUrl: '/assets/img/lakeinsight/logo.png',
+  monogramUrl: '/assets/img/lakeinsight/monogram.png',
+  faviconUrl: '/assets/img/lakeinsight/favicon.ico',
 } as const;
+
+/** Remap legacy /img/lakeinsight/* settings to the /assets/ prefix. */
+export const normalizeLakeInsightAssetUrl = (url?: string): string => {
+  if (!url) {
+    return '';
+  }
+
+  if (url.startsWith('/img/lakeinsight/')) {
+    return url.replace('/img/lakeinsight/', '/assets/img/lakeinsight/');
+  }
+
+  return url;
+};
