@@ -31,6 +31,52 @@
     <script nonce="${cspNonce}">
       window.BASE_PATH = '${basePath}';
     </script>
+    <script nonce="${cspNonce}">
+      (function () {
+        var base = window.BASE_PATH || '/';
+        function resolveLakeInsightSrc(src) {
+          if (!src) return src;
+          if (/^https?:|^data:|^blob:/.test(src)) return src;
+          var path = src;
+          if (path.indexOf('/img/lakeinsight/') === 0) {
+            path = path.replace('/img/lakeinsight/', '/assets/img/lakeinsight/');
+          }
+          if (path.charAt(0) !== '/') return path;
+          if (!base || base === '/' || base === '${basePath}') return path;
+          var normalized = base.endsWith('/') ? base.slice(0, -1) : base;
+          if (path === normalized || path.indexOf(normalized + '/') === 0) {
+            return path;
+          }
+          return normalized + path;
+        }
+        function fixBrandImages(root) {
+          var imgs = (root || document).querySelectorAll(
+            '#brand-image, img[src*="lakeinsight"], img[src*="/img/lakeinsight/"]'
+          );
+          imgs.forEach(function (img) {
+            var next = resolveLakeInsightSrc(img.getAttribute('src'));
+            if (next && next !== img.getAttribute('src')) {
+              img.setAttribute('src', next);
+            }
+          });
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function () {
+            fixBrandImages(document);
+          });
+        } else {
+          fixBrandImages(document);
+        }
+        new MutationObserver(function () {
+          fixBrandImages(document);
+        }).observe(document.documentElement, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ['src'],
+        });
+      })();
+    </script>
 
     <link rel="shortcut icon" href="${basePath}assets/img/lakeinsight/favicon.ico" type="image/png" />
     <link rel="icon" href="${basePath}assets/img/lakeinsight/favicon.ico" type="image/png" />
