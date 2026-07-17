@@ -11,7 +11,7 @@
  *  limitations under the License.
  */
 import { FC, useMemo, useRef } from 'react';
-import { normalizeLakeInsightAssetUrl } from '../../../constants/LakeInsightBranding.constants';
+import { resolveBrandingAssetUrl } from '../../../constants/LakeInsightBranding.constants';
 import { useApplicationStore } from '../../../hooks/useApplicationStore';
 import brandClassBase from '../../../utils/BrandData/BrandClassBase';
 
@@ -43,8 +43,8 @@ const BrandImage: FC<BrandImageProps> = ({
     const monoGram = brandClassBase.getMonogram().src;
     const logo = brandClassBase.getLogo().src;
 
-    const defaultLogo = isMonoGram ? monoGram : logo;
-    const customPath = normalizeLakeInsightAssetUrl(
+    const defaultLogo = resolveBrandingAssetUrl(isMonoGram ? monoGram : logo);
+    const customPath = resolveBrandingAssetUrl(
       isMonoGram ? customMonogramUrlPath : customLogoUrlPath
     );
     const logoSource = customPath || defaultLogo;
@@ -59,7 +59,7 @@ const BrandImage: FC<BrandImageProps> = ({
       data-testid={dataTestId ?? 'brand-logo-image'}
       height={height}
       id="brand-image"
-      src={src ?? logoSource}
+      src={src ? resolveBrandingAssetUrl(src) : logoSource}
       width={width}
       onError={(e) => {
         if (hasFallbackRef.current) {

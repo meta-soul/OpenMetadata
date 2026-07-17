@@ -11,10 +11,12 @@
  *  limitations under the License.
  */
 
+import { getBasePath } from '../utils/HistoryUtils';
+
 /**
  * LakeInsight offline branding assets under public/assets/img/lakeinsight.
- * Paths use the /assets/ prefix so they match Vite hashed static routes that
- * ingress/gateways typically allow (plain /img/* may be blocked and 404).
+ * Stored paths are app-root relative (no deployment basePath); callers must
+ * resolve them with {@link resolveBrandingAssetUrl} for subpath installs.
  */
 export const LAKEINSIGHT_BRANDING = {
   pageTitle: 'LakeInsight',
@@ -23,15 +25,45 @@ export const LAKEINSIGHT_BRANDING = {
   faviconUrl: '/assets/img/lakeinsight/favicon.ico',
 } as const;
 
-/** Remap legacy /img/lakeinsight/* settings to the /assets/ prefix. */
-export const normalizeLakeInsightAssetUrl = (url?: string): string => {
+/**
+ * Remap legacy /img/lakeinsight/* paths and prefix the runtime BASE_PATH
+ * (e.g. /openmetadata) so assets load on subpath deployments.
+ */
+export const resolveBrandingAssetUrl = (url?: string): string => {
   if (!url) {
     return '';
   }
 
-  if (url.startsWith('/img/lakeinsight/')) {
-    return url.replace('/img/lakeinsight/', '/assets/img/lakeinsight/');
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('data:') ||
+    url.startsWith('blob:')
+  ) {
+    return url;
   }
 
-  return url;
+  let path = url;
+  if (path.startsWith('/img/lakeinsight/')) {
+    path = path.replace('/img/lakeinsight/', '/assets/img/lakeinsight/');
+  }
+
+  // Already a relative Vite asset URL (no leading slash) — leave as-is.
+  if (!path.startsWith('/')) {
+    return path;
+  }
+
+  const basePath = getBasePath();
+  if (!basePath) {
+    return path;
+  }
+
+  if (path === basePath || path.startsWith(`${basePath}/`)) {
+    return path;
+  }
+
+  return `${basePath}${path}`;
 };
+
+/** @deprecated use resolveBrandingAssetUrl */
+export const normalizeLakeInsightAssetUrl = resolveBrandingAssetUrl;

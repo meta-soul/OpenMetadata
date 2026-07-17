@@ -46,6 +46,10 @@ import { SnackbarProvider } from 'notistack';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DEFAULT_THEME } from './constants/Appearance.constants';
+import {
+  LAKEINSIGHT_BRANDING,
+  resolveBrandingAssetUrl,
+} from './constants/LakeInsightBranding.constants';
 import RuleEnforcementProvider from './context/RuleEnforcementProvider/RuleEnforcementProvider';
 import i18n from './utils/i18next/LocalUtil';
 import { getThemeConfig } from './utils/ThemeUtils';
@@ -90,14 +94,12 @@ const App: FC = () => {
   }, []);
 
   useEffect(() => {
-    const faviconHref = isEmpty(
-      applicationConfig?.customLogoConfig?.customFaviconUrlPath
-    )
-      ? '/assets/img/lakeinsight/favicon.ico'
-      : applicationConfig?.customLogoConfig?.customFaviconUrlPath?.replace(
-          '/img/lakeinsight/',
-          '/assets/img/lakeinsight/'
-        ) ?? '/assets/img/lakeinsight/favicon.ico';
+    const faviconHref = resolveBrandingAssetUrl(
+      isEmpty(applicationConfig?.customLogoConfig?.customFaviconUrlPath)
+        ? LAKEINSIGHT_BRANDING.faviconUrl
+        : applicationConfig?.customLogoConfig?.customFaviconUrlPath ??
+            LAKEINSIGHT_BRANDING.faviconUrl
+    );
     const link = document.querySelectorAll('link[rel~="icon"]');
 
     if (!isEmpty(link)) {
