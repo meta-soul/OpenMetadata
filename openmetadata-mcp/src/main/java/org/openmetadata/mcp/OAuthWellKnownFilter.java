@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.openmetadata.mcp.server.transport.OAuthHttpStatelessServerTransportProvider;
+import org.openmetadata.mcp.server.transport.RequestPathUtils;
 
 /**
  * Filter to handle OAuth well-known endpoints at the root level. Directly delegates to the MCP
@@ -32,7 +33,7 @@ public class OAuthWellKnownFilter implements Filter {
 
     HttpServletRequest request = (HttpServletRequest) servletRequest;
     HttpServletResponse response = (HttpServletResponse) servletResponse;
-    String path = request.getRequestURI();
+    String path = RequestPathUtils.relativeRequestPath(request);
 
     if (path.equals("/.well-known/oauth-authorization-server")
         || path.equals("/.well-known/oauth-authorization-server/mcp")
