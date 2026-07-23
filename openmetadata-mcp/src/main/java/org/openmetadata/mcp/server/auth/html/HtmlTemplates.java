@@ -149,7 +149,7 @@ public class HtmlTemplates {
               <h1>Welcome to OpenMetadata</h1>
               <p class="subtitle">%s is requesting access to your account</p>
               %s
-              <form method="POST" action="/mcp/login">
+              <form method="POST" action="%s/mcp/login">
                   <input type="hidden" name="csrf_token" value="%s">
 
                   <label for="username">Email <span class="required">*</span></label>
@@ -165,7 +165,8 @@ public class HtmlTemplates {
       </html>
       """;
 
-  public static String generateLoginForm(String clientName, String errorMessage, String csrfToken) {
+  public static String generateLoginForm(
+      String clientName, String errorMessage, String csrfToken, String contextPath) {
 
     String errorHtml =
         errorMessage != null && !errorMessage.isEmpty()
@@ -174,8 +175,10 @@ public class HtmlTemplates {
 
     String safeClientName = escapeHtml(clientName != null ? clientName : "An application");
     String safeCsrfToken = escapeHtml(csrfToken != null ? csrfToken : "");
+    String safeContextPath = contextPath != null ? contextPath : "";
 
-    return String.format(LOGIN_FORM_TEMPLATE, safeClientName, errorHtml, safeCsrfToken);
+    return String.format(
+        LOGIN_FORM_TEMPLATE, safeClientName, errorHtml, safeContextPath, safeCsrfToken);
   }
 
   public static String escapeHtml(String input) {
