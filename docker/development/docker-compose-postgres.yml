@@ -68,9 +68,7 @@ services:
       - es-data:/usr/share/opensearch/data
 
   execute-migrate-all:
-    build:
-      context: ../../.
-      dockerfile: docker/development/Dockerfile
+    image: swr.cn-southwest-2.myhuaweicloud.com/dmetasoul-repo/openmetadata/server:v1.12.9-oidc-fix13
     container_name: execute_migrate_all
     command: "./bootstrap/openmetadata-ops.sh -d migrate --force"
     environment:
@@ -299,9 +297,7 @@ services:
       - local_app_net
 
   openmetadata-server:
-    build:
-      context: ../../.
-      dockerfile: docker/development/Dockerfile
+    image: swr.cn-southwest-2.myhuaweicloud.com/dmetasoul-repo/openmetadata/server:v1.12.9-oidc-fix13
     container_name: openmetadata_server
     environment:
       OPENMETADATA_CLUSTER_NAME: ${OPENMETADATA_CLUSTER_NAME:-openmetadata}
