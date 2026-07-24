@@ -68,7 +68,7 @@ services:
       - es-data:/usr/share/opensearch/data
 
   execute-migrate-all:
-    image: swr.cn-southwest-2.myhuaweicloud.com/dmetasoul-repo/openmetadata/server:v1.12.9-oidc-fix13
+    image: swr.cn-southwest-2.myhuaweicloud.com/dmetasoul-repo/openmetadata/server:v1.12.9-oidc-fix14
     container_name: execute_migrate_all
     command: "./bootstrap/openmetadata-ops.sh -d migrate --force"
     environment:
@@ -297,7 +297,7 @@ services:
       - local_app_net
 
   openmetadata-server:
-    image: swr.cn-southwest-2.myhuaweicloud.com/dmetasoul-repo/openmetadata/server:v1.12.9-oidc-fix13
+    image: swr.cn-southwest-2.myhuaweicloud.com/dmetasoul-repo/openmetadata/server:v1.12.9-oidc-fix14
     container_name: openmetadata_server
     environment:
       OPENMETADATA_CLUSTER_NAME: ${OPENMETADATA_CLUSTER_NAME:-openmetadata}
