@@ -64,7 +64,6 @@ export const getInitOptions = (): InitOptions => {
       'tr-TR': { translation: trTR },
       'ar-SA': { translation: arSA },
     },
-    lng: 'zh-CN',
     fallbackLng: ['zh-CN'],
     detection: {
       // Prefer explicit user choice; default to zh-CN for LakeInsight builds
@@ -118,4 +117,31 @@ export const languageMap: Record<string, SupportedLocales> = {
   th: SupportedLocales.Thai,
   tr: SupportedLocales.Türkçe,
   ar: SupportedLocales.العربية,
+};
+
+export const QUERY_LANGUAGE_PARAM = 'lng';
+
+const normalizeQueryLanguage = (raw: string): SupportedLocales | undefined => {
+  const lower = raw.toLowerCase();
+  const exact = Object.values(SupportedLocales).find(
+    (locale) => locale.toLowerCase() === lower
+  );
+
+  if (exact) {
+    return exact;
+  }
+
+  return languageMap[lower.split('-')[0]];
+};
+
+export const resolveLanguageFromQuery = (
+  search: string = window.location.search
+): SupportedLocales | undefined => {
+  const raw = new URLSearchParams(search).get(QUERY_LANGUAGE_PARAM);
+
+  if (!raw?.trim()) {
+    return undefined;
+  }
+
+  return normalizeQueryLanguage(raw.trim());
 };

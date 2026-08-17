@@ -22,6 +22,7 @@ import { useLineageStore } from '../../hooks/useLineageStore';
 import { getLimitConfig } from '../../rest/limitsAPI';
 import { getSettingsByType } from '../../rest/settingConfigAPI';
 import applicationRoutesClass from '../../utils/ApplicationRoutesClassBase';
+import { resolveLanguageFromQuery } from '../../utils/i18next/i18nextUtil';
 import i18n from '../../utils/i18next/LocalUtil';
 import { LimitBanner } from '../common/LimitBanner/LimitBanner';
 import LeftSidebar from '../MyData/LeftSidebar/LeftSidebar.component';
@@ -36,6 +37,7 @@ const AppContainer = () => {
     useApplicationStore();
   const {
     preferences: { language },
+    setPreference,
   } = useCurrentUserPreferences();
   const AuthenticatedRouter = applicationRoutesClass.getRouteElements();
   const ApplicationExtras = applicationsClassBase.getApplicationExtension();
@@ -78,8 +80,17 @@ const AppContainer = () => {
   }, [currentUser?.id]);
 
   useEffect(() => {
-    if (language) {
-      i18n.changeLanguage(language);
+    const queryLanguage = resolveLanguageFromQuery();
+    const resolvedLanguage = queryLanguage ?? language;
+
+    if (!resolvedLanguage) {
+      return;
+    }
+
+    i18n.changeLanguage(resolvedLanguage);
+
+    if (queryLanguage && queryLanguage !== language) {
+      setPreference({ language: queryLanguage });
     }
   }, [language]);
 

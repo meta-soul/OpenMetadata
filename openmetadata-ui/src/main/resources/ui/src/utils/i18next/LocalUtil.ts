@@ -14,12 +14,12 @@
 import i18n, { t as i18nextT } from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
-import { getInitOptions } from './i18nextUtil';
+import { getInitOptions, resolveLanguageFromQuery } from './i18nextUtil';
 import { SupportedLocales } from './LocalUtil.interface';
 
 // LakeInsight default language is Simplified Chinese
 export const detectBrowserLanguage = (): SupportedLocales => {
-  return SupportedLocales.简体中文;
+  return resolveLanguageFromQuery() ?? SupportedLocales.简体中文;
 };
 
 // Initialize i18next (language)
@@ -27,6 +27,11 @@ i18n
   .use(LanguageDetector) // Detects system language
   .use(initReactI18next)
   .init(getInitOptions());
+
+const queryLanguage = resolveLanguageFromQuery();
+if (queryLanguage) {
+  i18n.changeLanguage(queryLanguage);
+}
 
 export const t = (key: string, options?: Record<string, unknown>): string => {
   const translation = i18nextT(key, options);
