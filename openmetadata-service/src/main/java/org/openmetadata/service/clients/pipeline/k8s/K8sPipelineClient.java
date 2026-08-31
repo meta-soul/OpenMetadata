@@ -20,6 +20,7 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
@@ -174,12 +175,17 @@ public class K8sPipelineClient extends PipelineServiceClient {
   private static final String NO_LOGS_MESSAGE = "No logs available for pod: ";
   private static final String NO_PODS_MESSAGE = "No pods found for this pipeline";
   private static final String FAILED_LOGS_MESSAGE = "Failed to retrieve logs: ";
+  private static final String K8S_LOGS_DESERIALIZATION_MESSAGE =
+      "Kubernetes pod status is incompatible with the bundled client";
+  private static final String K8S_STATUS_DESERIALIZATION_WARNING =
+      "Pod/job status details are unavailable because the bundled Kubernetes client could not "
+          + "parse fields returned by the Kubernetes cluster";
 
   // Error messages
   private static final String NAMESPACE_NOT_EXISTS_ERROR =
       "Namespace '%s' does not exist. Create it with: kubectl create namespace %s";
   private static final String NAMESPACE_VALIDATION_WARNING =
-      "Could not validate namespace '%s' exists (HTTP %d): %s. Proceeding anyway.";
+      "Could not validate namespace '{}' exists (HTTP {}): {}. Proceeding anyway.";
   private static final String K8S_API_CALL_FAILED = "K8s API call failed: ";
   private static final String FAILED_TO_INITIALIZE_K8S_CLIENT =
       "Failed to initialize Kubernetes client: ";
@@ -260,6 +266,9 @@ public class K8sPipelineClient extends PipelineServiceClient {
 
     if (!skipInit) {
       ApiClient client = initializeK8sClient(params);
+      // Tolerate unknown fields in API responses so newer clusters (e.g. pod-level
+      // status.allocatedResources since K8s 1.36) don't break strict Gson deserialization.
+      JSON.setLenientOnJson(true);
       Configuration.setDefaultApiClient(client);
       this.batchApi = new BatchV1Api(client);
       this.coreApi = new CoreV1Api(client);
@@ -958,9 +967,35 @@ public class K8sPipelineClient extends PipelineServiceClient {
     String serviceAccount = k8sConfig.getServiceAccountName();
 
     try {
+      boolean statusDetailsUnavailable = false;
+
       // Test basic namespace access
-      coreApi.listNamespacedPod(namespace).limit(1).execute();
-      batchApi.listNamespacedJob(namespace).limit(1).execute();
+      try {
+        coreApi.listNamespacedPod(namespace).limit(1).execute();
+      } catch (IllegalArgumentException e) {
+        if (!isUnknownFieldDeserializationError(e)) {
+          throw e;
+        }
+        statusDetailsUnavailable = true;
+        LOG.warn(
+            "Kubernetes namespace {} is reachable but pod status could not be deserialized "
+                + "(client-java models likely lag the cluster's Kubernetes version): {}",
+            namespace,
+            e.getMessage());
+      }
+      try {
+        batchApi.listNamespacedJob(namespace).limit(1).execute();
+      } catch (IllegalArgumentException e) {
+        if (!isUnknownFieldDeserializationError(e)) {
+          throw e;
+        }
+        statusDetailsUnavailable = true;
+        LOG.warn(
+            "Kubernetes namespace {} is reachable but job status could not be deserialized "
+                + "(client-java models likely lag the cluster's Kubernetes version): {}",
+            namespace,
+            e.getMessage());
+      }
 
       // Test ConfigMap permissions (required for pipeline configuration)
       try {
@@ -985,9 +1020,19 @@ public class K8sPipelineClient extends PipelineServiceClient {
       }
 
       String message = String.format(K8S_AVAILABLE_FORMAT, namespace, serviceAccount);
+      if (statusDetailsUnavailable) {
+        message = message + ". " + K8S_STATUS_DESERIALIZATION_WARNING;
+      }
 
       return buildHealthyStatus(getKubernetesVersion()).withPlatform(message);
 
+    } catch (IllegalArgumentException e) {
+      String error =
+          String.format(
+              "Failed to parse Kubernetes pod/job status (namespace: %s, service account: %s)",
+              namespace, serviceAccount);
+      LOG.error(error, e);
+      return buildUnhealthyStatus(error);
     } catch (ApiException e) {
       String error =
           String.format(
@@ -1076,11 +1121,26 @@ public class K8sPipelineClient extends PipelineServiceClient {
       Map<String, String> labelSelectorMap = new HashMap<>();
       labelSelectorMap.put(LABEL_PIPELINE, pipelineName);
 
-      V1PodList pods =
-          coreApi
-              .listNamespacedPod(k8sConfig.getNamespace())
-              .labelSelector(buildLabelSelector(labelSelectorMap))
-              .execute();
+      V1PodList pods;
+      try {
+        pods =
+            coreApi
+                .listNamespacedPod(k8sConfig.getNamespace())
+                .labelSelector(buildLabelSelector(labelSelectorMap))
+                .execute();
+      } catch (IllegalArgumentException e) {
+        if (!isUnknownFieldDeserializationError(e)) {
+          throw e;
+        }
+        // client-java cannot deserialize a pod returned by a newer Kubernetes version when the
+        // response contains a field that is not present in the bundled client models.
+        LOG.warn(
+            "Could not deserialize pod while fetching logs for pipeline {} (client-java models "
+                + "likely lag the cluster's Kubernetes version)",
+            pipelineName,
+            e);
+        return Map.of("logs", FAILED_LOGS_MESSAGE + K8S_LOGS_DESERIALIZATION_MESSAGE);
+      }
 
       // Early return if no pods found - avoid processing empty lists
       if (pods.getItems().isEmpty()) {
@@ -2249,6 +2309,14 @@ public class K8sPipelineClient extends PipelineServiceClient {
     } catch (Exception e) {
       return "kubernetes";
     }
+  }
+
+  // Matches the wording io.kubernetes:client-java's generated models use for a field the bundled
+  // schema does not know about; the version is pinned in this module's pom.xml. An upgrade that
+  // changes this wording needs a matching update here and in the tests that hardcode it.
+  private boolean isUnknownFieldDeserializationError(IllegalArgumentException exception) {
+    String message = exception.getMessage();
+    return message != null && message.contains("is not defined in the `");
   }
 
   private String getStringParam(Map<String, Object> params, String key, String defaultValue) {

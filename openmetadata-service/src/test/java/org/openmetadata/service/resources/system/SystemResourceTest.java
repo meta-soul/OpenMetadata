@@ -388,7 +388,9 @@ class SystemResourceTest extends OpenMetadataApplicationTest {
         updatedUiThemePreference.getCustomLogoConfig().getCustomLogoUrlPath());
     // reset to default
     uiThemePreference.getCustomTheme().setPrimaryColor("");
-    uiThemePreference.getCustomLogoConfig().setCustomLogoUrlPath("/assets/img/lakeinsight/logo.png");
+    uiThemePreference
+        .getCustomLogoConfig()
+        .setCustomLogoUrlPath("/assets/img/lakeinsight/logo.png");
     updatedUiThemeSettings =
         new Settings()
             .withConfigType(SettingsType.CUSTOM_UI_THEME_PREFERENCE)
