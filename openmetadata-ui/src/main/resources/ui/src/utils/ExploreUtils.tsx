@@ -246,6 +246,62 @@ export const getExploreQueryFilterMust = (data: ExploreQuickFilterField[]) => {
   return must;
 };
 
+export const KYUUBI_SERVICE_TYPE = 'kyuubi';
+
+export const DATABASE_EXPLORE_TREE_SEARCH_INDEXES: SearchIndex[] = [
+  SearchIndex.DATABASE,
+  SearchIndex.DATABASE_SCHEMA,
+  SearchIndex.TABLE,
+  SearchIndex.STORED_PROCEDURE,
+];
+
+export const isDatabaseExploreTree = (
+  treeNodeKey?: string,
+  rootIndex?: string
+): boolean =>
+  treeNodeKey === SearchIndex.DATABASE || rootIndex === SearchIndex.DATABASE;
+
+export const getExploreTreeSearchIndex = ({
+  isRoot,
+  treeNodeKey,
+  rootIndex,
+  parentSearchIndex,
+}: {
+  isRoot: boolean;
+  treeNodeKey: string;
+  rootIndex?: string;
+  parentSearchIndex?: string;
+}): SearchIndex | SearchIndex[] => {
+  if (isDatabaseExploreTree(treeNodeKey, rootIndex)) {
+    return DATABASE_EXPLORE_TREE_SEARCH_INDEXES;
+  }
+
+  return (isRoot ? treeNodeKey : parentSearchIndex) as SearchIndex;
+};
+
+export const isKyuubiExploreHierarchy = (
+  filterField?: ExploreQuickFilterField[],
+  key?: EntityFields,
+  value?: string
+): boolean => {
+  if (
+    key === EntityFields.SERVICE_TYPE &&
+    value?.toLowerCase() === KYUUBI_SERVICE_TYPE
+  ) {
+    return true;
+  }
+
+  return Boolean(
+    filterField?.some(
+      (field) =>
+        field.key === EntityFields.SERVICE_TYPE &&
+        field.value?.some(
+          (item) => item.key.toLowerCase() === KYUUBI_SERVICE_TYPE
+        )
+    )
+  );
+};
+
 export const getSubLevelHierarchyKey = (
   isDatabaseHierarchy = false,
   filterField?: ExploreQuickFilterField[],
@@ -262,14 +318,25 @@ export const getSubLevelHierarchyKey = (
       : getExploreQueryFilterMust(filterField);
   }
 
-  const bucketMapping = isDatabaseHierarchy
+  const skipDummyDatabaseLayer =
+    isDatabaseHierarchy && isKyuubiExploreHierarchy(filterField, key, value);
+
+  const databaseBucketMapping = skipDummyDatabaseLayer
     ? {
+        [EntityFields.SERVICE_TYPE]: EntityFields.SERVICE,
+        [EntityFields.SERVICE]: EntityFields.DATABASE_SCHEMA_DISPLAY_NAME,
+        [EntityFields.DATABASE_SCHEMA_DISPLAY_NAME]: EntityFields.ENTITY_TYPE,
+      }
+    : {
         [EntityFields.SERVICE_TYPE]: EntityFields.SERVICE,
         [EntityFields.SERVICE]: EntityFields.DATABASE_DISPLAY_NAME,
         [EntityFields.DATABASE_DISPLAY_NAME]:
           EntityFields.DATABASE_SCHEMA_DISPLAY_NAME,
         [EntityFields.DATABASE_SCHEMA_DISPLAY_NAME]: EntityFields.ENTITY_TYPE,
-      }
+      };
+
+  const bucketMapping = isDatabaseHierarchy
+    ? databaseBucketMapping
     : {
         [EntityFields.SERVICE_TYPE]: EntityFields.SERVICE,
         [EntityFields.SERVICE]: EntityFields.ENTITY_TYPE,
@@ -504,14 +571,16 @@ export const generateTabItems = (
       label: (
         <div
           className="d-flex items-center justify-between"
-          data-testid={`${lowerCase(tabDetail.label)}-tab`}>
+          data-testid={`${lowerCase(tabDetail.label)}-tab`}
+        >
           <div className="explore-tab-label">
             <span className="explore-icon d-flex m-r-xs">
               <Icon />
             </span>
             <Typography.Text
               className={tabSearchIndex === searchIndex ? 'text-primary' : ''}
-              ellipsis={{ tooltip: true }}>
+              ellipsis={{ tooltip: true }}
+            >
               {tabDetail.label}
             </Typography.Text>
           </div>

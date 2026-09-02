@@ -32,6 +32,7 @@ import entityUtilClassBase from '../../../utils/EntityUtilClassBase';
 import { getPluralizeEntityName } from '../../../utils/EntityUtils';
 import {
   getAggregations,
+  getExploreTreeSearchIndex,
   getQuickFilterObject,
   getQuickFilterObjectForEntities,
   getSubLevelHierarchyKey,
@@ -65,13 +66,15 @@ const ExploreTreeTitle = ({ node }: { node: ExploreTreeNode }) => {
             <span className="text-grey-400">{` (${node.type})`}</span>
           )}
         </Typography.Text>
-      }>
+      }
+    >
       <div className="d-flex justify-between">
         <Typography.Text
           className={classNames({
             'm-l-xss': node.data?.isRoot,
           })}
-          data-testid={`explore-tree-title-${node.data?.dataId ?? node.title}`}>
+          data-testid={`explore-tree-title-${node.data?.dataId ?? node.title}`}
+        >
           {node.title}
         </Typography.Text>
         {!isUndefined(node.count) && (
@@ -128,9 +131,13 @@ const ExploreTree = ({ onFieldValueSelect }: ExploreTreeProps) => {
           rootIndex,
         } = (treeNode as ExploreTreeNode)?.data as TreeNodeData;
 
-        const searchIndex = isRoot
-          ? treeNode.key
-          : (treeNode as ExploreTreeNode)?.data?.parentSearchIndex;
+        const searchIndex = getExploreTreeSearchIndex({
+          isRoot,
+          treeNodeKey: String(treeNode.key),
+          rootIndex,
+          parentSearchIndex: (treeNode as ExploreTreeNode)?.data
+            ?.parentSearchIndex,
+        });
 
         const { bucket: bucketToFind, queryFilter } =
           searchQueryParam !== ''
@@ -152,7 +159,7 @@ const ExploreTree = ({ onFieldValueSelect }: ExploreTreeProps) => {
           pageNumber: 0,
           pageSize: 0,
           queryFilter: queryFilter,
-          searchIndex: searchIndex as SearchIndex,
+          searchIndex: searchIndex,
           includeDeleted: false,
           trackTotalHits: true,
           fetchSource: false,
@@ -341,10 +348,12 @@ const ExploreTree = ({ onFieldValueSelect }: ExploreTreeProps) => {
       <ErrorPlaceHolder
         className="h-min-80 d-flex flex-col justify-center border-none"
         size={SIZE.MEDIUM}
-        type={ERROR_PLACEHOLDER_TYPE.CUSTOM}>
+        type={ERROR_PLACEHOLDER_TYPE.CUSTOM}
+      >
         <Typography.Paragraph
           className="font-medium"
-          style={{ marginBottom: '0' }}>
+          style={{ marginBottom: '0' }}
+        >
           {t('message.no-data-yet')}
         </Typography.Paragraph>
         <Typography.Paragraph style={{ marginBottom: '0' }}>
@@ -358,7 +367,8 @@ const ExploreTree = ({ onFieldValueSelect }: ExploreTreeProps) => {
                 aria-label="Learn more about data discovery"
                 href={DATA_DISCOVERY_DOCS}
                 rel="noreferrer"
-                target="_blank">
+                target="_blank"
+              >
                 {t('label.learn-more')}
               </a>
             }

@@ -13,10 +13,12 @@
 import { ExploreQuickFilterField } from '../components/Explore/ExplorePage.interface';
 import { EntityFields } from '../enums/AdvancedSearch.enum';
 import { EntityType } from '../enums/entity.enum';
+import { SearchIndex } from '../enums/search.enum';
 import { QueryFieldInterface } from '../pages/ExplorePage/ExplorePage.interface';
 import {
   extractTermKeys,
   getExploreQueryFilterMust,
+  getExploreTreeSearchIndex,
   getQuickFilterObjectForEntities,
   getQuickFilterQuery,
   getSelectedValuesFromQuickFilter,
@@ -265,6 +267,91 @@ describe('Explore Utils', () => {
           },
         },
       });
+    });
+
+    it('skips the dummy database layer for Kyuubi after the service node', () => {
+      const result = getSubLevelHierarchyKey(
+        true,
+        [
+          {
+            label: 'serviceType',
+            key: EntityFields.SERVICE_TYPE,
+            value: [
+              {
+                key: 'kyuubi',
+                label: 'kyuubi',
+              },
+            ],
+          },
+        ],
+        EntityFields.SERVICE,
+        'lakesoul'
+      );
+
+      expect(result.bucket).toEqual(EntityFields.DATABASE_SCHEMA_DISPLAY_NAME);
+    });
+
+    it('keeps the database layer for non-Kyuubi database services', () => {
+      const result = getSubLevelHierarchyKey(
+        true,
+        [
+          {
+            label: 'serviceType',
+            key: EntityFields.SERVICE_TYPE,
+            value: [
+              {
+                key: 'mysql',
+                label: 'mysql',
+              },
+            ],
+          },
+        ],
+        EntityFields.SERVICE,
+        'mysql-prod'
+      );
+
+      expect(result.bucket).toEqual(EntityFields.DATABASE_DISPLAY_NAME);
+    });
+  });
+
+  describe('getExploreTreeSearchIndex', () => {
+    it('uses database, schema, table and stored procedure indexes for the Databases tree', () => {
+      expect(
+        getExploreTreeSearchIndex({
+          isRoot: true,
+          treeNodeKey: SearchIndex.DATABASE,
+        })
+      ).toEqual([
+        SearchIndex.DATABASE,
+        SearchIndex.DATABASE_SCHEMA,
+        SearchIndex.TABLE,
+        SearchIndex.STORED_PROCEDURE,
+      ]);
+    });
+
+    it('keeps using combined database indexes when expanding a Databases child node', () => {
+      expect(
+        getExploreTreeSearchIndex({
+          isRoot: false,
+          treeNodeKey: 'random-child-key',
+          rootIndex: SearchIndex.DATABASE,
+          parentSearchIndex: SearchIndex.DATABASE,
+        })
+      ).toEqual([
+        SearchIndex.DATABASE,
+        SearchIndex.DATABASE_SCHEMA,
+        SearchIndex.TABLE,
+        SearchIndex.STORED_PROCEDURE,
+      ]);
+    });
+
+    it('does not change the search index for non-database trees', () => {
+      expect(
+        getExploreTreeSearchIndex({
+          isRoot: true,
+          treeNodeKey: SearchIndex.PIPELINE,
+        })
+      ).toEqual(SearchIndex.PIPELINE);
     });
   });
 

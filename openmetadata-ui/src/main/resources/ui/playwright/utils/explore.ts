@@ -165,7 +165,7 @@ export const expandServiceInExploreTree = async (
   if (!serviceExpanded) {
     // Check that the service exists in the explore tree
     const serviceNameRes = page.waitForResponse(
-      '/api/v1/search/query?q=&index=database_search_index&from=0&size=0*mysql*'
+      '/api/v1/search/query?q=&index=*database_search_index,database_schema_search_index*&from=0&size=0*mysql*'
     );
     await page
       .locator('div')
@@ -178,7 +178,7 @@ export const expandServiceInExploreTree = async (
 
   // Expand the service to see databases
   const databaseRes = page.waitForResponse(
-    '/api/v1/search/query?q=&index=dataAsset*serviceType*'
+    '/api/v1/search/query?q=&index=*database_search_index,database_schema_search_index*&from=0&size=0*'
   );
   await page
     .locator('.ant-tree-treenode')
@@ -194,7 +194,7 @@ export const expandDatabaseInExploreTree = async (
 ) => {
   // Expand the database to see schemas
   const databaseSchemaRes = page.waitForResponse(
-    '/api/v1/search/query?q=&index=dataAsset*database.displayName*'
+    '/api/v1/search/query?q=&index=*database_search_index,database_schema_search_index*&from=0&size=0*'
   );
   await page
     .locator('.ant-tree-treenode')
