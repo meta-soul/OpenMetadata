@@ -117,10 +117,12 @@ const LeftSidebar = () => {
       collapsedWidth={72}
       data-testid="left-sidebar"
       trigger={null}
-      width={228}>
+      width={228}
+    >
       <div className="logo-container">
         <Link className="flex-shrink-0" id="openmetadata_logo" to="/">
           <BrandImage
+            alt="LakeInsight Logo"
             className="vertical-middle h-full"
             dataTestId="image"
             height={40}
@@ -174,7 +176,8 @@ const LeftSidebar = () => {
           footer={null}
           open={isConfirmLogoutModalOpen}
           width={360}
-          onCancel={hideConfirmLogoutModal}>
+          onCancel={hideConfirmLogoutModal}
+        >
           <Typography.Title level={5}>{t('label.logout')}</Typography.Title>
           <Typography.Text className="text-grey-muted">
             {t('message.logout-confirmation')}
@@ -188,7 +191,8 @@ const LeftSidebar = () => {
               className="confirm-btn"
               data-testid="confirm-logout"
               type="primary"
-              onClick={onLogoutHandler}>
+              onClick={onLogoutHandler}
+            >
               {t('label.logout')}
             </Button>
           </div>

@@ -10,8 +10,8 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-import { FC, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { FC, useMemo, useRef } from 'react';
+import { resolveBrandingAssetUrl } from '../../../constants/LakeInsightBranding.constants';
 import { useApplicationStore } from '../../../hooks/useApplicationStore';
 import brandClassBase from '../../../utils/BrandData/BrandClassBase';
 
@@ -35,7 +35,7 @@ const BrandImage: FC<BrandImageProps> = ({
   isMonoGram = false,
 }) => {
   const { applicationConfig } = useApplicationStore();
-  const { t } = useTranslation();
+  const hasFallbackRef = useRef(false);
 
   const { defaultLogo, logoSource } = useMemo(() => {
     const { customLogoUrlPath = '', customMonogramUrlPath = '' } =
@@ -43,10 +43,11 @@ const BrandImage: FC<BrandImageProps> = ({
     const monoGram = brandClassBase.getMonogram().src;
     const logo = brandClassBase.getLogo().src;
 
-    const defaultLogo = isMonoGram ? monoGram : logo;
-    const logoSource = isMonoGram
-      ? customMonogramUrlPath || monoGram
-      : customLogoUrlPath || logo;
+    const defaultLogo = resolveBrandingAssetUrl(isMonoGram ? monoGram : logo);
+    const customPath = resolveBrandingAssetUrl(
+      isMonoGram ? customMonogramUrlPath : customLogoUrlPath
+    );
+    const logoSource = customPath || defaultLogo;
 
     return { defaultLogo, logoSource };
   }, [isMonoGram, applicationConfig?.customLogoConfig]);
@@ -54,14 +55,18 @@ const BrandImage: FC<BrandImageProps> = ({
   return (
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- image load lifecycle, not interaction
     <img
-      alt={alt ?? t('label.brand-name-logo')}
+      alt={alt ?? 'LakeInsight Logo'}
       className={className}
       data-testid={dataTestId ?? 'brand-logo-image'}
       height={height}
       id="brand-image"
-      src={src ?? logoSource}
+      src={src ? resolveBrandingAssetUrl(src) : logoSource}
       width={width}
       onError={(e) => {
+        if (hasFallbackRef.current) {
+          return;
+        }
+        hasFallbackRef.current = true;
         e.currentTarget.src = defaultLogo;
       }}
     />
