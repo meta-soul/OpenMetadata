@@ -92,7 +92,8 @@ public class BasicAuthLoginServlet extends HttpServlet {
         clientName = client.getClientName();
       }
 
-      String html = HtmlTemplates.generateLoginForm(clientName, null, csrfToken);
+      String html =
+          HtmlTemplates.generateLoginForm(clientName, null, csrfToken, request.getContextPath());
       response.setContentType("text/html; charset=UTF-8");
       response.setStatus(HttpServletResponse.SC_OK);
       response.getWriter().write(html);
@@ -273,7 +274,9 @@ public class BasicAuthLoginServlet extends HttpServlet {
       clientName = client.getClientName();
     }
 
-    String html = HtmlTemplates.generateLoginForm(clientName, errorMessage, csrfToken);
+    String html =
+        HtmlTemplates.generateLoginForm(
+            clientName, errorMessage, csrfToken, request.getContextPath());
     response.setContentType("text/html; charset=UTF-8");
     response.setStatus(HttpServletResponse.SC_OK);
     response.getWriter().write(html);

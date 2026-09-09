@@ -198,9 +198,10 @@ public class McpServer implements McpServerProvider {
       addToolsToServer(server, tools);
       addPromptsToServer(server, prompts);
 
-      // SSE transport for MCP
-      ServletHolder servletHolderSSE = new ServletHolder(statelessOauthTransport);
-      contextHandler.addServlet(servletHolderSSE, "/mcp/*");
+      // SSE transport for MCP — map both exact /mcp and /mcp/* so POST to /mcp is not
+      // swallowed by AssetServlet /* (405). Jetty requires separate holders per path.
+      contextHandler.addServlet(new ServletHolder(statelessOauthTransport), "/mcp");
+      contextHandler.addServlet(new ServletHolder(statelessOauthTransport), "/mcp/*");
 
       // Register Basic Auth / LDAP login handler with the transport provider.
       // The /mcp/* wildcard servlet intercepts all /mcp/ paths, so dedicated servlets at

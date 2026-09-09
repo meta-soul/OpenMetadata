@@ -355,7 +355,7 @@ public class OAuthHttpStatelessServerTransportProvider extends HttpServletStatel
       throws ServletException, IOException {
 
     LOG.debug("Handling OAuth GET request: {}", request.getRequestURI());
-    String path = request.getRequestURI();
+    String path = RequestPathUtils.relativeRequestPath(request);
 
     // Handle OAuth GET routes (exact path matching to prevent path confusion attacks)
     if (path.equals("/mcp/.well-known/oauth-authorization-server")) {
@@ -550,7 +550,7 @@ public class OAuthHttpStatelessServerTransportProvider extends HttpServletStatel
       throws ServletException, IOException {
 
     LOG.debug("Handling OAuth POST request: {}", request.getRequestURI());
-    String path = request.getRequestURI();
+    String path = RequestPathUtils.relativeRequestPath(request);
 
     // Handle OAuth POST routes (exact path matching to prevent path confusion attacks)
     if (path.equals("/mcp/token")) {

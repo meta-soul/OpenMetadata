@@ -114,7 +114,7 @@ public class HttpServletStatelessServerTransport extends HttpServlet
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
-    String requestURI = request.getRequestURI();
+    String requestURI = RequestPathUtils.relativeRequestPath(request);
     if (!requestURI.equals(mcpEndpoint)) {
       response.sendError(HttpServletResponse.SC_NOT_FOUND);
       return;
@@ -133,7 +133,7 @@ public class HttpServletStatelessServerTransport extends HttpServlet
   protected void doPost(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
 
-    String requestURI = request.getRequestURI();
+    String requestURI = RequestPathUtils.relativeRequestPath(request);
     if (!requestURI.equals(mcpEndpoint)) {
       response.sendError(HttpServletResponse.SC_NOT_FOUND);
       return;
