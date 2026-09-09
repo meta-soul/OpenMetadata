@@ -2680,7 +2680,7 @@ export enum DatabaseServiceType {
     Impala = "Impala",
     Informix = "Informix",
     Iomete = "Iomete",
-    Kyuubi = "Kyuubi",
+    LakeInsight = "LakeInsight",
     MariaDB = "MariaDB",
     MicrosoftAccess = "MicrosoftAccess",
     MicrosoftFabric = "MicrosoftFabric",

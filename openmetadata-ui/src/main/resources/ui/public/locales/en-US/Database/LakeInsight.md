@@ -1,6 +1,6 @@
-# Kyuubi
+# LakeInsight
 
-In this section, we provide guides and references to use the Kyuubi connector. Kyuubi uses Spark as the underlying execution engine and communicates via the HiveServer2 Thrift protocol.
+In this section, we provide guides and references to use the LakeInsight connector. LakeInsight uses Spark as the underlying execution engine and communicates via the HiveServer2 Thrift protocol.
 
 ## Requirements
 To extract metadata, the user used in the connection needs to be able to perform `SELECT`, `SHOW`, and `DESCRIBE` operations in the database/schema where the metadata needs to be extracted from.
@@ -8,7 +8,7 @@ To extract metadata, the user used in the connection needs to be able to perform
 ### Profiler & Data Quality
 Executing the profiler Workflow or data quality tests, will require the user to have `SELECT` permission on the tables/schemas where the profiler/tests will be executed. More information on the profiler workflow setup can be found <a href="https://docs.open-metadata.org/how-to-guides/data-quality-observability/profiler/workflow" target="_blank">here</a> and data quality tests <a href="https://docs.open-metadata.org/connectors/ingestion/workflows/data-quality" target="_blank">here</a>.
 
-## Kyuubi Connection Details
+## LakeInsight Connection Details
 
 $$section
 ### Scheme $(id="scheme")
@@ -17,25 +17,25 @@ $$
 
 $$section
 ### Username $(id="username")
-Username to connect to Kyuubi. This user should have the necessary privileges described in the section above.
+Username to connect to LakeInsight. This user should have the necessary privileges described in the section above.
 $$
 
 $$section
 ### Password $(id="password")
-Password to connect to Kyuubi.
+Password to connect to LakeInsight.
 $$
 
 $$section
 ### Host and Port $(id="hostPort")
 
-This parameter specifies the host and port of the Kyuubi server. This should be specified as a string in the format `hostname:port`. For example, you might set the hostPort parameter to `mykyuubihost:10009`.
+This parameter specifies the host and port of the LakeInsight server. This should be specified as a string in the format `hostname:port`. For example, you might set the hostPort parameter to `mylakeinsighthost:10009`.
 
 If you are running the OpenMetadata ingestion in a docker and your services are hosted on the `localhost`, then use `host.docker.internal:10009` as the value.
 $$
 
 $$section
 ### Authentication Mode $(id="auth")
-The auth parameter specifies the authentication method to use when connecting to the Kyuubi server. Possible values are `NONE` (default), `LDAP`, `KERBEROS`, `CUSTOM`, `NOSASL`, `BASIC`, `GSSAPI`, `JWT`, and `PLAIN`.
+The auth parameter specifies the authentication method to use when connecting to the LakeInsight server. Possible values are `NONE` (default), `LDAP`, `KERBEROS`, `CUSTOM`, `NOSASL`, `BASIC`, `GSSAPI`, `JWT`, and `PLAIN`.
 $$
 
 $$section
@@ -55,17 +55,17 @@ In OpenMetadata, the Database Service hierarchy works as follows:
 ```
 Database Service > Database > Schema > Table
 ```
-In the case of Kyuubi, we won't have a Database as such. If you'd like to see your data in a database named something other than `default`, you can specify the name in this field.
+In the case of LakeInsight, we won't have a Database as such. If you'd like to see your data in a database named something other than `default`, you can specify the name in this field.
 $$
 
 $$section
 ### Auth Options $(id="authOptions")
-Authentication options to pass to Kyuubi connector. These options are based on SQLAlchemy.
+Authentication options to pass to LakeInsight connector. These options are based on SQLAlchemy.
 $$
 
 $$section
 ### Use SSL $(id="useSSL")
-Enable SSL connection to Kyuubi server. When enabled, SSL transport will be used for secure communication.
+Enable SSL connection to LakeInsight server. When enabled, SSL transport will be used for secure communication.
 $$
 
 ### SSL Configuration

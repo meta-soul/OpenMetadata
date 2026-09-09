@@ -9,8 +9,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """
-Custom Kyuubi Thrift connection that handles Spark-specific behavior.
-Kyuubi uses Spark as the underlying execution engine and communicates
+Custom LakeInsight Thrift connection that handles Spark-specific behavior.
+LakeInsight uses Spark as the underlying execution engine and communicates
 via the HiveServer2 Thrift protocol. This connection is adapted from
 the Hive custom connection and works with pyhive over Thrift.
 """
@@ -27,8 +27,8 @@ from pyhive.hive import _check_status, get_installed_sasl
 from TCLIService import TCLIService, ttypes
 
 
-class CustomKyuubiConnection(BaseConnection):
-    """Custom Kyuubi connection that integrates puretransport and SSL certificate support"""
+class CustomLakeInsightConnection(BaseConnection):
+    """Custom LakeInsight connection that integrates puretransport and SSL certificate support"""
 
     def __init__(  # noqa: C901
         self,
@@ -51,7 +51,7 @@ class CustomKyuubiConnection(BaseConnection):
         ssl_cert_reqs=None,
         ssl_check_hostname=None,
     ):
-        """Connect to Kyuubi via HiveServer2 Thrift protocol"""
+        """Connect to LakeInsight via HiveServer2 Thrift protocol"""
 
         # Handle HTTPS scheme with SSL context
         if scheme in ("https", "http") and thrift_transport is None:

@@ -1,12 +1,12 @@
 {
-    "name": "Kyuubi",
-    "displayName": "Kyuubi Test Connection",
-    "description": "This Test Connection validates the access against the Kyuubi server and basic metadata extraction of schemas and tables.",
+    "name": "LakeInsight",
+    "displayName": "LakeInsight Test Connection",
+    "description": "This Test Connection validates the access against the LakeInsight server and basic metadata extraction of schemas and tables.",
     "steps": [
       {
         "name": "CheckAccess",
-        "description": "Validate that we can properly reach the Kyuubi server and authenticate with the given credentials.",
-        "errorMessage": "Failed to connect to Kyuubi, please validate the credentials",
+        "description": "Validate that we can properly reach the LakeInsight server and authenticate with the given credentials.",
+        "errorMessage": "Failed to connect to LakeInsight, please validate the credentials",
         "shortCircuit": true,
         "mandatory": true
       },

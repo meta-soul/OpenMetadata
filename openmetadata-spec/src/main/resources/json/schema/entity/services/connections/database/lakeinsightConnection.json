@@ -1,18 +1,18 @@
 {
-  "$id": "https://open-metadata.org/schema/entity/services/connections/database/kyuubiConnection.json",
+  "$id": "https://open-metadata.org/schema/entity/services/connections/database/lakeinsightConnection.json",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "KyuubiConnection",
-  "description": "Kyuubi Connection Config",
+  "title": "LakeInsightConnection",
+  "description": "LakeInsight Connection Config",
   "type": "object",
-  "javaType": "org.openmetadata.schema.services.connections.database.KyuubiConnection",
+  "javaType": "org.openmetadata.schema.services.connections.database.LakeInsightConnection",
   "definitions": {
-    "kyuubiType": {
+    "lakeinsightType": {
       "description": "Service type.",
       "type": "string",
-      "enum": ["Kyuubi"],
-      "default": "Kyuubi"
+      "enum": ["LakeInsight"],
+      "default": "LakeInsight"
     },
-    "kyuubiScheme": {
+    "lakeinsightScheme": {
       "description": "SQLAlchemy driver scheme options.",
       "type": "string",
       "enum": ["hive", "hive+http", "hive+https"],
@@ -23,34 +23,34 @@
     "type": {
       "title": "Service Type",
       "description": "Service Type",
-      "$ref": "#/definitions/kyuubiType",
-      "default": "Kyuubi"
+      "$ref": "#/definitions/lakeinsightType",
+      "default": "LakeInsight"
     },
     "scheme": {
       "title": "Connection Scheme",
       "description": "SQLAlchemy driver scheme options.",
-      "$ref": "#/definitions/kyuubiScheme",
+      "$ref": "#/definitions/lakeinsightScheme",
       "default": "hive"
     },
     "username": {
       "title": "Username",
-      "description": "Username to connect to Kyuubi. This user should have privileges to read all the metadata.",
+      "description": "Username to connect to LakeInsight. This user should have privileges to read all the metadata.",
       "type": "string"
     },
     "password": {
       "title": "Password",
-      "description": "Password to connect to Kyuubi.",
+      "description": "Password to connect to LakeInsight.",
       "type": "string",
       "format": "password"
     },
     "hostPort": {
       "title": "Host and Port",
-      "description": "Host and port of the Kyuubi service.",
+      "description": "Host and port of the LakeInsight service.",
       "type": "string"
     },
     "auth": {
       "title": "Authentication Mode",
-      "description": "Authentication mode to connect to Kyuubi.",
+      "description": "Authentication mode to connect to LakeInsight.",
       "type": "string",
       "enum": ["NONE", "LDAP", "KERBEROS", "CUSTOM", "NOSASL", "BASIC", "GSSAPI", "JWT", "PLAIN"],
       "default": "NONE"
@@ -72,12 +72,12 @@
     },
     "authOptions": {
       "title": "URL Authentication Options",
-      "description": "Authentication options to pass to Kyuubi connector. These options are based on SQLAlchemy.",
+      "description": "Authentication options to pass to LakeInsight connector. These options are based on SQLAlchemy.",
       "type": "string"
     },
     "useSSL": {
       "title": "Use SSL",
-      "description": "Enable SSL connection to Kyuubi server. When enabled, SSL transport will be used for secure communication.",
+      "description": "Enable SSL connection to LakeInsight server. When enabled, SSL transport will be used for secure communication.",
       "type": "boolean",
       "default": false
     },
@@ -122,7 +122,9 @@
     },
     "supportsUsageExtraction": {
       "title": "Supports Usage Extraction",
-      "$ref": "../connectionBasicType.json#/definitions/supportsUsageExtraction"
+      "description": "Supports Usage Extraction.",
+      "type": "boolean",
+      "default": false
     },
     "sampleDataStorageConfig": {
       "title": "Storage Config for Sample Data",

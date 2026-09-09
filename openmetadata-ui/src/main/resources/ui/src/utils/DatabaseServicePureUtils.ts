@@ -122,6 +122,8 @@ const databaseSchemaLoaders: Partial<
     loadConnectionSchema('connections/database/microsoftFabricConnection.json'),
   [DatabaseServiceType.Iomete]: () =>
     loadConnectionSchema('connections/database/iometeConnection.json'),
+  [DatabaseServiceType.LakeInsight]: () =>
+    loadConnectionSchema('connections/database/lakeinsightConnection.json'),
 };
 
 const resolveSchemaModule = (mod: SchemaModule): Record<string, unknown> => {

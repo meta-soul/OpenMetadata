@@ -9,17 +9,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """
-SQL Queries used during Kyuubi ingestion.
+LakeInsight lineage module.
 
-Kyuubi uses Spark as the execution engine, so queries follow Spark SQL syntax.
-DESCRIBE TABLE EXTENDED is used instead of Hive's DESCRIBE FORMATTED for
-compatibility with Spark's output format.
+LakeInsight does not expose query log system tables, so lineage extraction
+is not supported. This module provides a no-op lineage source that
+can be used as a placeholder.
 """
 
-import textwrap
+from metadata.ingestion.source.database.lineage_source import LineageSource
 
-KYUUBI_GET_TABLE_COMMENTS = textwrap.dedent(
+
+class LakeInsightLineageSource(LineageSource):
     """
-    DESCRIBE TABLE EXTENDED {schema_name}.{table_name}
+    No-op lineage source for LakeInsight.
+
+    LakeInsight does not have query log system tables, so lineage extraction
+    is not supported.
     """
-)

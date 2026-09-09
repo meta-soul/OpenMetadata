@@ -9,9 +9,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 """
-Kyuubi source methods.
+LakeInsight source methods.
 
-Kyuubi uses Spark as the underlying execution engine and communicates
+LakeInsight uses Spark as the underlying execution engine and communicates
 via the HiveServer2 Thrift protocol. The metadata extraction customizes
 the Hive SQLAlchemy dialect methods to handle Spark's DESCRIBE TABLE
 output format, which differs from Hive's DESCRIBE FORMATTED format.
@@ -23,8 +23,8 @@ from pyhive.sqlalchemy_hive import HiveDialect
 from sqlalchemy.engine.reflection import Inspector
 
 from metadata.generated.schema.entity.data.table import TableType
-from metadata.generated.schema.entity.services.connections.database.kyuubiConnection import (
-    KyuubiConnection,
+from metadata.generated.schema.entity.services.connections.database.lakeinsightConnection import (
+    LakeInsightConnection,
 )
 from metadata.generated.schema.metadataIngestion.workflow import (
     Source as WorkflowSource,
@@ -32,7 +32,7 @@ from metadata.generated.schema.metadataIngestion.workflow import (
 from metadata.ingestion.api.steps import InvalidSourceException
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
 from metadata.ingestion.source.database.common_db_source import CommonDbSourceService
-from metadata.ingestion.source.database.kyuubi.utils import (
+from metadata.ingestion.source.database.lakeinsight.utils import (
     get_columns,
     get_table_comment,
     get_table_names,
@@ -47,20 +47,20 @@ HiveDialect.get_columns = get_columns
 HiveDialect.get_table_comment = get_table_comment
 
 
-class KyuubiSource(CommonDbSourceService):
+class LakeInsightSource(CommonDbSourceService):
     """
     Implements the necessary methods to extract
-    Database metadata from Kyuubi Source (Spark-based execution).
+    Database metadata from LakeInsight Source (Spark-based execution).
     """
 
-    service_connection: KyuubiConnection
+    service_connection: LakeInsightConnection
 
     @classmethod
     def create(cls, config_dict, metadata: OpenMetadata, pipeline_name: str | None = None):
         config = WorkflowSource.model_validate(config_dict)
-        connection: KyuubiConnection = config.serviceConnection.root.config
-        if not isinstance(connection, KyuubiConnection):
-            raise InvalidSourceException(f"Expected KyuubiConnection, but got {connection}")
+        connection: LakeInsightConnection = config.serviceConnection.root.config
+        if not isinstance(connection, LakeInsightConnection):
+            raise InvalidSourceException(f"Expected LakeInsightConnection, but got {connection}")
         return cls(config, metadata)
 
     def prepare(self):
@@ -68,7 +68,7 @@ class KyuubiSource(CommonDbSourceService):
         Monkey-patch the HiveDialect methods to handle Spark's DESCRIBE TABLE
         output format which differs from Hive's format.
 
-        Kyuubi uses Spark as its execution engine, so DESCRIBE TABLE and
+        LakeInsight uses Spark as its execution engine, so DESCRIBE TABLE and
         SHOW TABLES output follow Spark conventions:
         - SHOW TABLES returns 3 columns (namespace, tableName, isTemporary)
         - DESCRIBE TABLE EXTENDED has Comment in col_name column

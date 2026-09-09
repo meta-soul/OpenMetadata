@@ -30,6 +30,7 @@ import glue from '../assets/img/service-icon-glue.webp';
 import greenplum from '../assets/img/service-icon-greenplum.webp';
 import hive from '../assets/img/service-icon-hive.webp';
 import ibmdb2 from '../assets/img/service-icon-ibmdb2.webp';
+import lakeinsightIcon from '../assets/img/lakeinsight/icon.png';
 import impala from '../assets/img/service-icon-impala.webp';
 import iomete from '../assets/img/service-icon-iomete.webp';
 import mariadb from '../assets/img/service-icon-mariadb.webp';
@@ -146,6 +147,7 @@ const SERVICE_ICON_LOADERS: Record<string, string> = {
   bigquery: bigquery,
   bigtable: bigtable,
   hive: hive,
+  lakeinsight: lakeinsightIcon,
   impala: impala,
   postgres: postgres,
   oracle: oracle,

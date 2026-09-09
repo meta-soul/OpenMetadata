@@ -267,3 +267,32 @@ CREATE TABLE IF NOT EXISTS rdf_custom_ontology (
   updatedAt bigint unsigned NOT NULL,
   PRIMARY KEY (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Rename the Kyuubi database service type to LakeInsight (the Kyuubi connector was
+-- rebranded for LakeInsight integration).
+-- 1. Service definition: serviceType is a generated column derived from json.
+UPDATE dbservice_entity
+SET json = JSON_SET(json, '$.serviceType', 'LakeInsight')
+WHERE serviceType = 'Kyuubi';
+
+-- 2. Data entities carry a denormalized serviceType copied from their service.
+UPDATE database_entity
+SET json = JSON_SET(json, '$.serviceType', 'LakeInsight')
+WHERE JSON_UNQUOTE(JSON_EXTRACT(json, '$.serviceType')) = 'Kyuubi';
+
+UPDATE database_schema_entity
+SET json = JSON_SET(json, '$.serviceType', 'LakeInsight')
+WHERE JSON_UNQUOTE(JSON_EXTRACT(json, '$.serviceType')) = 'Kyuubi';
+
+UPDATE table_entity
+SET json = JSON_SET(json, '$.serviceType', 'LakeInsight')
+WHERE JSON_UNQUOTE(JSON_EXTRACT(json, '$.serviceType')) = 'Kyuubi';
+
+UPDATE stored_procedure_entity
+SET json = JSON_SET(json, '$.serviceType', 'LakeInsight')
+WHERE JSON_UNQUOTE(JSON_EXTRACT(json, '$.serviceType')) = 'Kyuubi';
+
+-- 3. Ingestion pipelines snapshot the connection config (type = serviceType).
+UPDATE ingestion_pipeline_entity
+SET json = JSON_SET(json, '$.sourceConfig.serviceConnection.config.type', 'LakeInsight')
+WHERE JSON_UNQUOTE(JSON_EXTRACT(json, '$.sourceConfig.serviceConnection.config.type')) = 'Kyuubi';

@@ -10,9 +10,9 @@
 #  limitations under the License.
 
 """
-Source connection handler for Kyuubi.
+Source connection handler for LakeInsight.
 
-Kyuubi uses the Hive Thrift protocol (HS2), so it connects via pyhive
+LakeInsight uses the Hive Thrift protocol (HS2), so it connects via pyhive
 with the Hive SQLAlchemy dialect. Authentication methods (LDAP, KERBEROS,
 NOSASL, NONE, CUSTOM) and SSL configuration follow the same pattern as
 the Hive connector.
@@ -20,7 +20,7 @@ the Hive connector.
 
 from urllib.parse import quote_plus
 
-# Monkey-patch pyhive to use our custom Kyuubi connection class
+# Monkey-patch pyhive to use our custom LakeInsight connection class
 import pyhive.hive
 from pydantic import SecretStr
 from sqlalchemy.engine import Engine
@@ -28,9 +28,9 @@ from sqlalchemy.engine import Engine
 from metadata.generated.schema.entity.automations.workflow import (
     Workflow as AutomationWorkflow,
 )
-from metadata.generated.schema.entity.services.connections.database.kyuubiConnection import (
-    KyuubiConnection,
-    KyuubiScheme,
+from metadata.generated.schema.entity.services.connections.database.lakeinsightConnection import (
+    LakeInsightConnection,
+    LakeInsightScheme,
 )
 from metadata.generated.schema.entity.services.connections.testConnectionResult import (
     TestConnectionResult,
@@ -45,20 +45,20 @@ from metadata.ingestion.connections.test_connections import (
     test_connection_db_schema_sources,
 )
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
-from metadata.ingestion.source.database.kyuubi.custom_kyuubi_connection import (
-    CustomKyuubiConnection,
+from metadata.ingestion.source.database.lakeinsight.custom_lakeinsight_connection import (
+    CustomLakeInsightConnection,
 )
 from metadata.utils.constants import THREE_MIN
 from metadata.utils.ssl_manager import check_ssl_and_init
 
-pyhive.hive.Connection = CustomKyuubiConnection
+pyhive.hive.Connection = CustomLakeInsightConnection
 
 
-def get_connection_url(connection: KyuubiConnection) -> str:
+def get_connection_url(connection: LakeInsightConnection) -> str:
     """
     Build the URL handling auth requirements.
 
-    Kyuubi uses the Hive Thrift protocol, so the connection URL
+    LakeInsight uses the Hive Thrift protocol, so the connection URL
     follows the same pattern as Hive (pyhive dialect).
     """
     url = f"{connection.scheme.value}://"
@@ -87,9 +87,9 @@ def get_connection_url(connection: KyuubiConnection) -> str:
     return url
 
 
-def get_connection(connection: KyuubiConnection) -> Engine:
+def get_connection(connection: LakeInsightConnection) -> Engine:
     """
-    Create connection to Kyuubi via Hive Thrift protocol.
+    Create connection to LakeInsight via Hive Thrift protocol.
     """
 
     if connection.auth:
@@ -97,7 +97,7 @@ def get_connection(connection: KyuubiConnection) -> Engine:
             connection.connectionArguments = init_empty_connection_arguments()
         auth_key = (
             "auth"
-            if connection.scheme in {KyuubiScheme.hive, KyuubiScheme.hive_http, KyuubiScheme.hive_https}
+            if connection.scheme in {LakeInsightScheme.hive, LakeInsightScheme.hive_http, LakeInsightScheme.hive_https}
             else "auth_mechanism"
         )
         connection.connectionArguments.root[auth_key] = connection.auth.value
@@ -127,7 +127,7 @@ def get_connection(connection: KyuubiConnection) -> Engine:
 def test_connection(
     metadata: OpenMetadata,
     engine: Engine,
-    service_connection: KyuubiConnection,
+    service_connection: LakeInsightConnection,
     automation_workflow: AutomationWorkflow | None = None,
     timeout_seconds: int | None = THREE_MIN,
 ) -> TestConnectionResult:
