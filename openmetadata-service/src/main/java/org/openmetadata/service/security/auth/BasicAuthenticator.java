@@ -286,7 +286,8 @@ public class BasicAuthenticator implements AuthenticatorHandler {
 
     // when basic auth is enabled and the user is created through the API without password, the
     // stored auth mechanism for the user is null
-    if (storedUser.getAuthenticationMechanism() == null) {
+    if (storedUser.getAuthenticationMechanism() == null
+        || storedUser.getAuthenticationMechanism().getConfig() == null) {
       storedUser.setAuthenticationMechanism(
           new AuthenticationMechanism()
               .withAuthType(BASIC)
@@ -510,7 +511,8 @@ public class BasicAuthenticator implements AuthenticatorHandler {
     // when basic auth is enabled and the user is created through the API without password, the
     // stored auth mechanism
     // for the user is null
-    if (omUser.getAuthenticationMechanism() == null) {
+    if (omUser.getAuthenticationMechanism() == null
+        || omUser.getAuthenticationMechanism().getConfig() == null) {
       throw new AuthenticationException(INVALID_USERNAME_PASSWORD);
     }
     @SuppressWarnings("unchecked")

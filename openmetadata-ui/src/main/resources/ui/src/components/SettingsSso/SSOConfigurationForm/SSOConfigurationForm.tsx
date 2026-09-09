@@ -131,7 +131,8 @@ const MetadataUploadStatusCard = ({
               'metadata-upload-status-icon-success': isSuccess,
               'metadata-upload-status-icon-error': !isSuccess,
             }
-          )}>
+          )}
+        >
           {isSuccess ? (
             <Check className="text-white" size={16} />
           ) : (
@@ -151,7 +152,8 @@ const MetadataUploadStatusCard = ({
         data-testid="change-metadata-xml-btn"
         size="small"
         type="link"
-        onClick={onChangeFile}>
+        onClick={onChangeFile}
+      >
         {t('label.change-entity', { entity: t('label.file') })}
       </Button>
     </div>
@@ -638,6 +640,60 @@ const SSOConfigurationFormRJSF = ({
         'ui:hideError': true,
       };
 
+      // Discovery mode toggle: auto (well-known) vs manual (explicit endpoints).
+      // Clone before mutating - oidcConfiguration is a shared reference to the
+      // module-level OIDC_UI_SCHEMA constant (getSSOUISchema spreads shallowly).
+      const oidcConfig = authConfig.oidcConfiguration
+        ? ({
+            ...(authConfig.oidcConfiguration as UISchemaObject),
+          } as UISchemaObject)
+        : undefined;
+      const currentDiscoveryMode =
+        internalData?.authenticationConfiguration?.oidcConfiguration
+          ?.discoveryMode;
+      if (oidcConfig) {
+        authConfig.oidcConfiguration = oidcConfig;
+        if (currentDiscoveryMode === 'manual') {
+          // manual: hide discoveryUri; show manual endpoints + userInfoFieldMapping
+          oidcConfig.discoveryUri = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          authConfig.displayNameClaim = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+        } else {
+          // auto: hide manual endpoints + userInfoFieldMapping; show discoveryUri
+          oidcConfig.issuer = { 'ui:widget': 'hidden', 'ui:hideError': true };
+          oidcConfig.authorizationEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.tokenEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.userInfoEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.logoutEndpoint = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          oidcConfig.jwksUri = { 'ui:widget': 'hidden', 'ui:hideError': true };
+          oidcConfig.userInfoTokenHeaderType = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+          authConfig.userInfoFieldMapping = {
+            'ui:widget': 'hidden',
+            'ui:hideError': true,
+          };
+        }
+      }
+
       // For Google, show authority even in Confidential mode
       const isGoogle = currentProvider === AuthProvider.Google;
       if (isGoogle) {
@@ -665,6 +721,7 @@ const SSOConfigurationFormRJSF = ({
   }, [
     currentProvider,
     internalData?.authenticationConfiguration?.clientType,
+    internalData?.authenticationConfiguration?.oidcConfiguration?.discoveryMode,
     hasExistingConfig,
     savedData,
     hideBorder,
@@ -1176,7 +1233,8 @@ const SSOConfigurationFormRJSF = ({
     return (
       <Card
         className="sso-provider-selection flex-col"
-        data-testid="sso-configuration-form-card">
+        data-testid="sso-configuration-form-card"
+      >
         <ProviderSelector
           selectedProvider={currentProvider as AuthProvider}
           onProviderSelect={handleProviderSelect}
@@ -1365,7 +1423,8 @@ const SSOConfigurationFormRJSF = ({
   const wrappedFormContent = (
     <Card
       className="sso-configuration-form-card flex-col p-0"
-      data-testid="sso-configuration-form-card">
+      data-testid="sso-configuration-form-card"
+    >
       {/* SSO Provider Header */}
       {renderProviderHeader()}
       {formContent}

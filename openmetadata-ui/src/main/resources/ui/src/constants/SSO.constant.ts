@@ -108,6 +108,54 @@ export const COMMON_UI_FIELDS = {
     'ui:placeholder':
       'e.g. https://accounts.google.com/.well-known/openid_configuration',
   },
+  oidcDiscoveryMode: {
+    'ui:title': 'Discovery Mode',
+    'ui:widget': 'radio',
+    'ui:options': { inline: true },
+    'ui:help':
+      'auto: use .well-known discovery; manual: specify endpoints explicitly (for IDPs without discovery).',
+  },
+  oidcIssuer: {
+    'ui:title': 'OIDC Issuer',
+    'ui:placeholder': 'e.g. https://sso.example.com',
+  },
+  oidcAuthorizationEndpoint: {
+    'ui:title': 'Authorization Endpoint',
+    'ui:placeholder': 'e.g. https://sso.example.com/auth/api/oauth2/authorize',
+  },
+  oidcTokenEndpoint: {
+    'ui:title': 'Token Endpoint',
+    'ui:placeholder': 'e.g. https://sso.example.com/auth/api/oauth2/token',
+  },
+  oidcUserInfoEndpoint: {
+    'ui:title': 'Userinfo Endpoint',
+    'ui:placeholder': 'e.g. https://sso.example.com/auth/api/oauth2/userinfo',
+  },
+  oidcLogoutEndpoint: {
+    'ui:title': 'Logout Endpoint',
+    'ui:placeholder': 'e.g. https://sso.example.com/api/oauth2/logout',
+  },
+  oidcJwksUri: {
+    'ui:title': 'JWKS URI',
+    'ui:placeholder':
+      'Optional. If empty, OM self-signed JWT validated by OM JWKS.',
+  },
+  oidcUserInfoTokenHeaderType: {
+    'ui:title': 'Userinfo Token Header Type',
+    'ui:widget': 'radio',
+    'ui:options': { inline: true },
+    'ui:help':
+      'bearer: Authorization: Bearer <token>; raw: Authorization: <token>',
+  },
+  displayNameClaim: {
+    'ui:title': 'Display Name Claim',
+    'ui:placeholder': 'e.g. nickname (auto mode only)',
+  },
+  userInfoFieldMapping: {
+    'ui:title': 'User Info Field Mapping',
+    'ui:description':
+      'Maps userinfo response fields to OM user attributes (manual mode).',
+  },
   oidcCallbackUrl: {
     'ui:title': OIDC_CALLBACK_URL_TITLE,
     'ui:placeholder': 'e.g. https://myapp.com/auth/callback',
@@ -387,7 +435,15 @@ export const OIDC_UI_SCHEMA = {
     id: COMMON_UI_FIELDS.oidcClientId,
     secret: COMMON_UI_FIELDS.oidcClientSecret,
     scope: COMMON_UI_FIELDS.oidcScope,
+    discoveryMode: COMMON_UI_FIELDS.oidcDiscoveryMode,
     discoveryUri: COMMON_UI_FIELDS.oidcDiscoveryUri,
+    issuer: COMMON_UI_FIELDS.oidcIssuer,
+    authorizationEndpoint: COMMON_UI_FIELDS.oidcAuthorizationEndpoint,
+    tokenEndpoint: COMMON_UI_FIELDS.oidcTokenEndpoint,
+    userInfoEndpoint: COMMON_UI_FIELDS.oidcUserInfoEndpoint,
+    logoutEndpoint: COMMON_UI_FIELDS.oidcLogoutEndpoint,
+    jwksUri: COMMON_UI_FIELDS.oidcJwksUri,
+    userInfoTokenHeaderType: COMMON_UI_FIELDS.oidcUserInfoTokenHeaderType,
     useNonce: COMMON_UI_FIELDS.oidcUseNonce,
     preferredJwsAlgorithm: { 'ui:widget': 'hidden', 'ui:hideError': true },
     responseType: { 'ui:widget': 'hidden', 'ui:hideError': true },
@@ -413,6 +469,9 @@ export const OIDC_UI_SCHEMA = {
   tokenValidationAlgorithm: { 'ui:widget': 'hidden', 'ui:hideError': true },
   // Hide publicKeyUrls - auto-populated from OIDC discovery document for confidential clients
   publicKeyUrls: { 'ui:widget': 'hidden', 'ui:hideError': true },
+  // Manual mode: userinfo field mapping; Auto mode: display name claim
+  userInfoFieldMapping: COMMON_UI_FIELDS.userInfoFieldMapping,
+  displayNameClaim: COMMON_UI_FIELDS.displayNameClaim,
 };
 
 // Standard OAuth/OIDC providers (Auth0, AWS Cognito) - hides clientAuthenticationMethod and tenant
@@ -662,7 +721,7 @@ interface UISchemaObject {
 export const PROVIDER_UI_SCHEMAS: Record<string, UISchemaObject> = {
   ldap: LDAP_UI_SCHEMA,
   saml: SAML_UI_SCHEMA,
-  customoidc: OIDC_UI_SCHEMA,
+  'custom-oidc': OIDC_UI_SCHEMA,
   google: GOOGLE_OAUTH_UI_SCHEMA,
   auth0: STANDARD_OAUTH_UI_SCHEMA,
   azure: AZURE_OAUTH_UI_SCHEMA,
@@ -695,7 +754,7 @@ export const ALLOWED_EMAIL_REGISTRATION_DOMAINS_VISIBILITY: Record<
 > = {
   ldap: { 'ui:widget': 'hidden', 'ui:hideError': true },
   saml: { 'ui:widget': 'hidden', 'ui:hideError': true },
-  customoidc: { 'ui:widget': 'hidden', 'ui:hideError': true },
+  'custom-oidc': { 'ui:widget': 'hidden', 'ui:hideError': true },
   google: { 'ui:widget': 'hidden', 'ui:hideError': true },
   auth0: { 'ui:widget': 'hidden', 'ui:hideError': true },
   azure: { 'ui:widget': 'hidden', 'ui:hideError': true },
@@ -712,7 +771,7 @@ export const PROVIDER_FIELD_MAPPINGS: Record<string, string[]> = {
     'tokenValidationAlgorithm',
     'enableSelfSignup',
   ],
-  customoidc: ['ldapConfiguration', 'samlConfiguration', 'enableSelfSignup'],
+  'custom-oidc': ['ldapConfiguration', 'samlConfiguration', 'enableSelfSignup'],
   google: [
     'ldapConfiguration',
     'samlConfiguration',

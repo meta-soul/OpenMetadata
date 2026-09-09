@@ -1160,6 +1160,9 @@ public class SystemResource {
           JsonUtils.readValue(jsonString, SecurityConfiguration.class);
       preserveMaskedSecuritySecrets(updatedConfig, currentConfig);
 
+      systemRepository.syncPublicKeyUrlsFromDiscovery(
+          updatedConfig.getAuthenticationConfiguration());
+
       String currentUsername = SecurityUtil.getUserName(securityContext);
       SecurityValidationResponse validationResponse =
           systemRepository.validateSecurityConfiguration(

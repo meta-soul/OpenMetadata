@@ -11,6 +11,7 @@ public class AuthServeletHandlerRegistry {
 
   private static volatile AuthServeletHandler currentHandler =
       NoopAuthServeletHandler.getInstance();
+  private static volatile AuthServeletHandler basicAuthHandler = null;
   private static volatile SessionService currentSessionService;
 
   public static AuthServeletHandler getHandler() {
@@ -36,6 +37,14 @@ public class AuthServeletHandlerRegistry {
       servletContext.setAttribute(AUTH_HANDLER_ATTRIBUTE, handler);
     }
     setHandler(handler);
+  }
+
+  public static AuthServeletHandler getBasicAuthHandler() {
+    return basicAuthHandler;
+  }
+
+  public static void setBasicAuthHandler(AuthServeletHandler handler) {
+    basicAuthHandler = handler;
   }
 
   public static SessionService getSessionService() {

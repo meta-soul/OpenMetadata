@@ -122,6 +122,36 @@
       "description": "Oidc Configuration for Confidential Client Type",
       "$ref": "../security/client/oidcClientConfig.json"
     },
+    "userInfoFieldMapping": {
+      "title": "User Info Field Mapping",
+      "description": "Mapping of userinfo response fields to OpenMetadata user attributes. Used in manual discovery mode. Aligns with lakeinsight name_field/display_name_field/uid_field.",
+      "type": "object",
+      "properties": {
+        "userNameField": {
+          "description": "userinfo field for OM User.name (lookup key). Aligns with lakeinsight name_field.",
+          "type": "string"
+        },
+        "emailField": {
+          "description": "userinfo field for OM User.email.",
+          "type": "string",
+          "default": "email"
+        },
+        "displayNameField": {
+          "description": "userinfo field for OM User.displayName. Aligns with lakeinsight display_name_field.",
+          "type": "string"
+        },
+        "userIdField": {
+          "description": "userinfo field for IDP user id. Aligns with lakeinsight uid_field. Optional, for reference only (OM User has no uid column).",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "displayNameClaim": {
+      "title": "Display Name Claim",
+      "description": "Claim name in id_token for user display name (auto mode only, e.g. nickname, name). Optional. Manual mode uses userInfoFieldMapping.displayNameField instead.",
+      "type": "string"
+    },
     "forceSecureSessionCookie": {
       "description": "Force secure flag on session cookies even when not using HTTPS directly. Enable this when running behind a proxy/load balancer that handles SSL termination.",
       "type": "boolean",

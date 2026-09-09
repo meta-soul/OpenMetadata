@@ -15,6 +15,7 @@ import { Page } from '@playwright/test';
 import path from 'path';
 
 import {
+  CUSTOM_OIDC_MANUAL_FIELDS,
   LDAP_VISIBLE_FIELDS,
   OIDC_COMMON_FIELDS,
   SAML_VISIBLE_FIELDS,
@@ -807,6 +808,111 @@ test.describe('SSO Configuration Tests', () => {
     }) => {
       await selectSSOProvider(page, 'google');
       await expect(page.locator('.ldap-role-mapping-widget')).not.toBeVisible();
+    });
+
+    test('should toggle Custom OIDC fields between auto and manual discovery modes', async ({
+      page,
+    }) => {
+      await selectSSOProvider(page, 'custom-oidc');
+
+      const discoveryUriField = page.locator(
+        '[id="root/authenticationConfiguration/oidcConfiguration/discoveryUri"]'
+      );
+      const issuerField = page.locator(
+        '[id="root/authenticationConfiguration/oidcConfiguration/issuer"]'
+      );
+      const displayNameClaimField = page.locator(
+        '[id="root/authenticationConfiguration/displayNameClaim"]'
+      );
+      const userInfoMappingField = page.locator(
+        '[id="root/authenticationConfiguration/userInfoFieldMapping"]'
+      );
+
+      await expect(page.getByText('Discovery Mode')).toBeVisible();
+      await expect(discoveryUriField).toBeVisible();
+      await expect(displayNameClaimField).toBeVisible();
+      await expect(issuerField).not.toBeVisible();
+      await expect(userInfoMappingField).not.toBeVisible();
+
+      await page.getByRole('radio', { name: /manual/i }).click();
+
+      for (const field of CUSTOM_OIDC_MANUAL_FIELDS) {
+        const fieldElement = page.getByLabel(field);
+        const fieldCount = await fieldElement.count();
+        if (fieldCount > 0) {
+          await expect(fieldElement.first()).toBeVisible();
+        }
+      }
+
+      await expect(discoveryUriField).not.toBeVisible();
+      await expect(displayNameClaimField).not.toBeVisible();
+      await expect(userInfoMappingField).toBeVisible();
+
+      await page.getByRole('radio', { name: /^auto$/i }).click();
+
+      await expect(discoveryUriField).toBeVisible();
+      await expect(displayNameClaimField).toBeVisible();
+      await expect(issuerField).not.toBeVisible();
+      await expect(userInfoMappingField).not.toBeVisible();
+    });
+
+    test('should allow filling Custom OIDC manual endpoint fields', async ({
+      page,
+    }) => {
+      await selectSSOProvider(page, 'custom-oidc');
+      await page.getByRole('radio', { name: /manual/i }).click();
+
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/oidcConfiguration/issuer"]'
+        )
+        .fill('https://sso.example.com');
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/oidcConfiguration/authorizationEndpoint"]'
+        )
+        .fill('https://sso.example.com/auth/api/oauth2/authorize');
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/oidcConfiguration/tokenEndpoint"]'
+        )
+        .fill('https://sso.example.com/auth/api/oauth2/token');
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/oidcConfiguration/userInfoEndpoint"]'
+        )
+        .fill('https://sso.example.com/auth/api/oauth2/userinfo');
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/oidcConfiguration/logoutEndpoint"]'
+        )
+        .fill('https://sso.example.com/api/oauth2/logout');
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/userInfoFieldMapping/userNameField"]'
+        )
+        .fill('name');
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/userInfoFieldMapping/displayNameField"]'
+        )
+        .fill('nickname');
+      await page
+        .locator(
+          '[id="root/authenticationConfiguration/userInfoFieldMapping/userIdField"]'
+        )
+        .fill('sub');
+
+      await expect(
+        page.locator(
+          '[id="root/authenticationConfiguration/oidcConfiguration/issuer"]'
+        )
+      ).toHaveValue('https://sso.example.com');
+      await expect(
+        page.locator(
+          '[id="root/authenticationConfiguration/userInfoFieldMapping/displayNameField"]'
+        )
+      ).toHaveValue('nickname');
     });
   });
 });

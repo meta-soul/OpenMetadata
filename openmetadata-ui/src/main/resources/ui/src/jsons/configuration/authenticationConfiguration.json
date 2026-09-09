@@ -675,9 +675,51 @@
           "type": "string",
           "default": "openid email profile"
         },
+        "discoveryMode": {
+          "description": "OIDC endpoint resolution mode: auto (well-known discovery) or manual (explicit endpoints). Defaults to auto for backward compatibility.",
+          "type": "string",
+          "enum": [
+            "auto",
+            "manual"
+          ],
+          "default": "auto"
+        },
         "discoveryUri": {
-          "description": "Discovery Uri for the Client.",
+          "description": "Discovery Uri for the Client. Required when discoveryMode is auto.",
           "type": "string"
+        },
+        "issuer": {
+          "description": "Issuer identifier URL. Used in manual mode to build OIDCProviderMetadata.",
+          "type": "string"
+        },
+        "authorizationEndpoint": {
+          "description": "OAuth2 authorization endpoint URL. Required in manual mode.",
+          "type": "string"
+        },
+        "tokenEndpoint": {
+          "description": "OAuth2 token endpoint URL. Required in manual mode.",
+          "type": "string"
+        },
+        "userInfoEndpoint": {
+          "description": "OIDC userinfo endpoint URL. Required in manual mode.",
+          "type": "string"
+        },
+        "logoutEndpoint": {
+          "description": "OIDC end-session / logout endpoint URL. Optional, used in manual mode.",
+          "type": "string"
+        },
+        "jwksUri": {
+          "description": "JWKS URI. Optional, manual mode. If provided, auto-fills publicKeyUrls for JwtFilter validation.",
+          "type": "string"
+        },
+        "userInfoTokenHeaderType": {
+          "description": "How to send token in userinfo request header: bearer (Authorization: Bearer <token>) or raw (Authorization: <token>). Defaults to bearer.",
+          "type": "string",
+          "enum": [
+            "bearer",
+            "raw"
+          ],
+          "default": "bearer"
         },
         "useNonce": {
           "description": "Use Nonce.",
@@ -752,10 +794,65 @@
       "required": [
         "id",
         "secret",
-        "discoveryUri",
         "tenant"
       ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "discoveryMode": {
+                "const": "manual"
+              }
+            },
+            "required": [
+              "discoveryMode"
+            ]
+          },
+          "then": {
+            "required": [
+              "authorizationEndpoint",
+              "tokenEndpoint",
+              "userInfoEndpoint"
+            ]
+          },
+          "else": {
+            "required": [
+              "discoveryUri"
+            ]
+          }
+        }
+      ],
       "additionalProperties": false
+    },
+    "userInfoFieldMapping": {
+      "title": "User Info Field Mapping",
+      "description": "Mapping of userinfo response fields to OpenMetadata user attributes. Used in manual discovery mode. Aligns with lakeinsight name_field/display_name_field/uid_field.",
+      "type": "object",
+      "properties": {
+        "userNameField": {
+          "description": "userinfo field for OM User.name (lookup key). Aligns with lakeinsight name_field.",
+          "type": "string"
+        },
+        "emailField": {
+          "description": "userinfo field for OM User.email.",
+          "type": "string",
+          "default": "email"
+        },
+        "displayNameField": {
+          "description": "userinfo field for OM User.displayName. Aligns with lakeinsight display_name_field.",
+          "type": "string"
+        },
+        "userIdField": {
+          "description": "userinfo field for IDP user id. Aligns with lakeinsight uid_field. Optional, for reference only (OM User has no uid column).",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "displayNameClaim": {
+      "title": "Display Name Claim",
+      "description": "Claim name in id_token for user display name (auto mode only, e.g. nickname, name). Optional. Manual mode uses userInfoFieldMapping.displayNameField instead.",
+      "type": "string"
     },
     "forceSecureSessionCookie": {
       "description": "Force secure flag on session cookies even when not using HTTPS directly. Enable this when running behind a proxy/load balancer that handles SSL termination.",

@@ -61,6 +61,13 @@ const SignInPage = () => {
     };
   }, [authConfig]);
 
+  // Always show the Basic Auth login form so users can log in with email/password
+  // even when SSO is configured. This prevents lockout if SSO configuration is broken.
+  const shouldShowBasicAuth = isAuthProviderBasic || isAuthProviderLDAP || true;
+
+  // Only show the SSO button when the configured provider is not Basic/LDAP.
+  const shouldShowSSO = !isAuthProviderBasic && !isAuthProviderLDAP;
+
   const { handleLogin } = useBasicAuth();
 
   const handleSignIn = useCallback(() => {
@@ -193,20 +200,22 @@ const SignInPage = () => {
       <div className="login-form-container" data-testid="login-form-container">
         <div
           className={classNames('login-box', {
-            'sso-container': !isAuthProviderBasic,
+            'sso-container': shouldShowSSO,
           })}>
           <BrandImage isMonoGram height={50} width={50} />
           <Typography.Title className="header-text display-sm" level={3}>
             {t('label.welcome-to')} {brandName}
           </Typography.Title>
-          {isAuthProviderBasic ? (
+
+          {shouldShowBasicAuth && (
             <div className="login-form ">
               <Form
                 className="w-full"
                 form={form}
                 layout="vertical"
                 validateMessages={VALIDATION_MESSAGES}
-                onFinish={handleSubmit}>
+                onFinish={handleSubmit}
+              >
                 <Form.Item
                   data-testid="email"
                   label={t('label.email')}
@@ -220,7 +229,8 @@ const SignInPage = () => {
                         fieldText: t('label.email'),
                       }),
                     },
-                  ]}>
+                  ]}
+                >
                   <Input
                     // eslint-disable-next-line jsx-a11y/no-autofocus -- focus first field of sign-in form
                     autoFocus
@@ -238,13 +248,15 @@ const SignInPage = () => {
                       <Typography.Link
                         className="forgot-password-link"
                         data-testid="forgot-password"
-                        onClick={onClickForgotPassword}>
+                        onClick={onClickForgotPassword}
+                      >
                         {t('label.forgot-password')}
                       </Typography.Link>
                     </>
                   }
                   name="password"
-                  rules={[{ required: true }]}>
+                  rules={[{ required: true }]}
+                >
                   <Input.Password
                     autoComplete="off"
                     className="input-field"
@@ -260,7 +272,8 @@ const SignInPage = () => {
                   htmlType="submit"
                   loading={loading}
                   size="large"
-                  type="primary">
+                  type="primary"
+                >
                   {t('label.sign-in')}
                 </Button>
               </Form>
@@ -275,7 +288,8 @@ const SignInPage = () => {
                         className="link-btn"
                         data-testid="signup"
                         type="link"
-                        onClick={onClickSignUp}>
+                        onClick={onClickSignUp}
+                      >
                         {t('label.create-entity', {
                           entity: t('label.account'),
                         })}
@@ -285,7 +299,8 @@ const SignInPage = () => {
                 </>
               )}
             </div>
-          ) : (
+          )}
+          {shouldShowSSO && (
             <div className=" login-form">
               <Typography.Text className="text-xl text-grey-muted m-t-lg">
                 {t('message.om-description')}

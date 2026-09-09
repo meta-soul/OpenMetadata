@@ -1805,10 +1805,13 @@ public class SystemRepository {
         try {
           AuthenticationCodeFlowHandler.validateConfig(authConfig, authzConfig);
         } catch (Exception e) {
-          // Return error if validation fails
-          return ValidationErrorBuilder.createFieldError(
-              "authenticationConfiguration.oidcConfiguration",
-              "OIDC flow validation failed: " + e.getMessage());
+          // Log warning but allow the configuration to be saved.
+          // The OIDC provider might be temporarily unreachable or the discovery endpoint
+          // might use a non-standard URL (e.g., with a subpath or port). Blocking the save
+          // would prevent users from fixing the configuration later via Basic Auth login.
+          LOG.warn(
+              "OIDC configuration validation warning: {}. Configuration saved but SSO may not work correctly until the issue is resolved.",
+              e.getMessage());
         }
       } else {
         LOG.debug(
@@ -1849,8 +1852,34 @@ public class SystemRepository {
     }
 
     OidcClientConfig oidcConfig = authConfig.getOidcConfiguration();
-    if (oidcConfig == null || nullOrEmpty(oidcConfig.getDiscoveryUri())) {
-      LOG.warn("Cannot resolve publicKeyUrls - missing oidcConfiguration or discoveryUri");
+    if (oidcConfig == null) {
+      LOG.warn("Cannot resolve publicKeyUrls - missing oidcConfiguration");
+      return;
+    }
+
+    // Manual mode issues OM-signed JWTs (userinfo + JWTTokenGenerator). JwtFilter must verify
+    // against OM JWKS — not the IDP jwksUri (ingestion-bot and SSO sessions use OM RS256 keys).
+    if (oidcConfig.getDiscoveryMode() != null
+        && "manual".equalsIgnoreCase(oidcConfig.getDiscoveryMode().value())) {
+      if (!nullOrEmpty(oidcConfig.getServerUrl())) {
+        String serverUrl = oidcConfig.getServerUrl();
+        String omJwksUrl =
+            (serverUrl.endsWith("/") ? serverUrl.substring(0, serverUrl.length() - 1) : serverUrl)
+                + "/api/v1/system/config/jwks";
+        authConfig.setPublicKeyUrls(List.of(omJwksUrl));
+        LOG.info(
+            "Manual mode - populated publicKeyUrls with OM JWKS {} for provider: {}",
+            omJwksUrl,
+            authConfig.getProvider());
+      } else {
+        LOG.warn(
+            "Manual mode without serverUrl - publicKeyUrls remains empty; JWT validation will fail");
+      }
+      return;
+    }
+
+    if (nullOrEmpty(oidcConfig.getDiscoveryUri())) {
+      LOG.warn("Cannot resolve publicKeyUrls - missing discoveryUri");
       return;
     }
 

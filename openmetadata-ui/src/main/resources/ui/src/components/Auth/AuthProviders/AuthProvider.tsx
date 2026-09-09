@@ -908,46 +908,54 @@ export const AuthProvider = ({
         const { clientId, domain, redirectUri } = getAuth0ProviderConfig();
 
         return (
-          <LazyAuth0ProviderWrapper
-            useRefreshTokens
-            cacheLocation="memory"
-            clientId={clientId}
-            domain={domain}
-            redirectUri={redirectUri}>
-            <LazyAuth0Authenticator ref={authenticatorRef}>
-              {childElement}
-            </LazyAuth0Authenticator>
-          </LazyAuth0ProviderWrapper>
+          <LazyBasicAuthProviderWrapper>
+            <LazyAuth0ProviderWrapper
+              useRefreshTokens
+              cacheLocation="memory"
+              clientId={clientId}
+              domain={domain}
+              redirectUri={redirectUri}>
+              <LazyAuth0Authenticator ref={authenticatorRef}>
+                {childElement}
+              </LazyAuth0Authenticator>
+            </LazyAuth0ProviderWrapper>
+          </LazyBasicAuthProviderWrapper>
         );
       }
       case AuthProviderEnum.Okta: {
         return (
-          <LazyOktaAuthProviderWrapper>
-            <LazyOktaAuthenticator ref={authenticatorRef}>
-              {childElement}
-            </LazyOktaAuthenticator>
-          </LazyOktaAuthProviderWrapper>
+          <LazyBasicAuthProviderWrapper>
+            <LazyOktaAuthProviderWrapper>
+              <LazyOktaAuthenticator ref={authenticatorRef}>
+                {childElement}
+              </LazyOktaAuthenticator>
+            </LazyOktaAuthProviderWrapper>
+          </LazyBasicAuthProviderWrapper>
         );
       }
       case AuthProviderEnum.Google:
       case AuthProviderEnum.CustomOidc:
       case AuthProviderEnum.AwsCognito: {
         return (
-          <LazyOidcAuthenticator
-            childComponentType={childComponentType}
-            ref={authenticatorRef}
-            userConfig={userConfig}>
-            {childElement}
-          </LazyOidcAuthenticator>
+          <LazyBasicAuthProviderWrapper>
+            <LazyOidcAuthenticator
+              childComponentType={childComponentType}
+              ref={authenticatorRef}
+              userConfig={userConfig}>
+              {childElement}
+            </LazyOidcAuthenticator>
+          </LazyBasicAuthProviderWrapper>
         );
       }
       case AuthProviderEnum.Azure: {
         return msalInstance ? (
-          <LazyMsalProviderWrapper instance={msalInstance}>
-            <LazyMsalAuthenticator ref={authenticatorRef}>
-              {childElement}
-            </LazyMsalAuthenticator>
-          </LazyMsalProviderWrapper>
+          <LazyBasicAuthProviderWrapper>
+            <LazyMsalProviderWrapper instance={msalInstance}>
+              <LazyMsalAuthenticator ref={authenticatorRef}>
+                {childElement}
+              </LazyMsalAuthenticator>
+            </LazyMsalProviderWrapper>
+          </LazyBasicAuthProviderWrapper>
         ) : (
           <Loader fullScreen />
         );
@@ -973,9 +981,11 @@ export const AuthProvider = ({
       authConfig?.provider === AuthProviderEnum.Saml
     ) {
       return (
-        <LazyGenericAuthenticator ref={authenticatorRef}>
-          {childElement}
-        </LazyGenericAuthenticator>
+        <LazyBasicAuthProviderWrapper>
+          <LazyGenericAuthenticator ref={authenticatorRef}>
+            {childElement}
+          </LazyGenericAuthenticator>
+        </LazyBasicAuthProviderWrapper>
       );
     }
 

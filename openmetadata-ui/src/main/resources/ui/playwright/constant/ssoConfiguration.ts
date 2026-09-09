@@ -21,6 +21,18 @@ export const SSO_COMMON_FIELDS = [
   'Use Roles From Provider',
 ];
 
+export const CUSTOM_OIDC_MANUAL_FIELDS = [
+  'Discovery Mode',
+  'OIDC Issuer',
+  'Authorization Endpoint',
+  'Token Endpoint',
+  'Userinfo Endpoint',
+  'Logout Endpoint',
+  'JWKS URI',
+  'Userinfo Token Header Type',
+  'User Info Field Mapping',
+];
+
 export const OIDC_COMMON_FIELDS = [
   'OIDC Client ID',
   'OIDC Client Secret',
