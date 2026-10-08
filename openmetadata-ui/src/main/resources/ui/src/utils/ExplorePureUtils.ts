@@ -223,6 +223,31 @@ export const getExploreQueryFilterMust = (data: ExploreQuickFilterField[]) => {
   return must;
 };
 
+const LAKEINSIGHT_SERVICE_TYPES = new Set(['lakeinsight', 'kyuubi']);
+
+export const isLakeInsightExploreHierarchy = (
+  filterField?: ExploreQuickFilterField[],
+  key?: EntityFields,
+  value?: string
+): boolean => {
+  if (
+    key === EntityFields.SERVICE_TYPE &&
+    LAKEINSIGHT_SERVICE_TYPES.has(value?.toLowerCase() ?? '')
+  ) {
+    return true;
+  }
+
+  return Boolean(
+    filterField?.some(
+      (field) =>
+        field.key === EntityFields.SERVICE_TYPE &&
+        field.value?.some((item) =>
+          LAKEINSIGHT_SERVICE_TYPES.has(item.key.toLowerCase())
+        )
+    )
+  );
+};
+
 export const getSubLevelHierarchyKey = (
   isDatabaseHierarchy = false,
   filterField?: ExploreQuickFilterField[],
@@ -239,14 +264,26 @@ export const getSubLevelHierarchyKey = (
       : getExploreQueryFilterMust(filterField);
   }
 
-  const bucketMapping = isDatabaseHierarchy
+  const skipDummyDatabaseLayer =
+    isDatabaseHierarchy &&
+    isLakeInsightExploreHierarchy(filterField, key, value);
+
+  const databaseBucketMapping = skipDummyDatabaseLayer
     ? {
+        [EntityFields.SERVICE_TYPE]: EntityFields.SERVICE,
+        [EntityFields.SERVICE]: EntityFields.DATABASE_SCHEMA_DISPLAY_NAME,
+        [EntityFields.DATABASE_SCHEMA_DISPLAY_NAME]: EntityFields.ENTITY_TYPE,
+      }
+    : {
         [EntityFields.SERVICE_TYPE]: EntityFields.SERVICE,
         [EntityFields.SERVICE]: EntityFields.DATABASE_DISPLAY_NAME,
         [EntityFields.DATABASE_DISPLAY_NAME]:
           EntityFields.DATABASE_SCHEMA_DISPLAY_NAME,
         [EntityFields.DATABASE_SCHEMA_DISPLAY_NAME]: EntityFields.ENTITY_TYPE,
-      }
+      };
+
+  const bucketMapping = isDatabaseHierarchy
+    ? databaseBucketMapping
     : {
         [EntityFields.SERVICE_TYPE]: EntityFields.SERVICE,
         [EntityFields.SERVICE]: EntityFields.ENTITY_TYPE,

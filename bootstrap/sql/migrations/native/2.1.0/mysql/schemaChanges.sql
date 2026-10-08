@@ -275,6 +275,12 @@ UPDATE dbservice_entity
 SET json = JSON_SET(json, '$.serviceType', 'LakeInsight')
 WHERE serviceType = 'Kyuubi';
 
+-- 1b. Connection discriminator. LakeInsightConnection.type only allows 'LakeInsight';
+-- leftover 'Kyuubi' fails Jackson deserialization even after serviceType is rewritten.
+UPDATE dbservice_entity
+SET json = JSON_SET(json, '$.connection.config.type', 'LakeInsight')
+WHERE JSON_UNQUOTE(JSON_EXTRACT(json, '$.connection.config.type')) = 'Kyuubi';
+
 -- 2. Data entities carry a denormalized serviceType copied from their service.
 UPDATE database_entity
 SET json = JSON_SET(json, '$.serviceType', 'LakeInsight')

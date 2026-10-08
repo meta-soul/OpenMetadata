@@ -304,6 +304,72 @@ describe('Explore Utils', () => {
         },
       });
     });
+
+    it('skips the dummy database layer for LakeInsight after the service node', () => {
+      const result = getSubLevelHierarchyKey(
+        true,
+        [
+          {
+            label: 'serviceType',
+            key: EntityFields.SERVICE_TYPE,
+            value: [
+              {
+                key: 'lakeinsight',
+                label: 'lakeinsight',
+              },
+            ],
+          },
+        ],
+        EntityFields.SERVICE,
+        'lakesoul'
+      );
+
+      expect(result.bucket).toEqual(EntityFields.DATABASE_SCHEMA_DISPLAY_NAME);
+    });
+
+    it('skips the dummy database layer for leftover Kyuubi serviceType', () => {
+      const result = getSubLevelHierarchyKey(
+        true,
+        [
+          {
+            label: 'serviceType',
+            key: EntityFields.SERVICE_TYPE,
+            value: [
+              {
+                key: 'kyuubi',
+                label: 'kyuubi',
+              },
+            ],
+          },
+        ],
+        EntityFields.SERVICE,
+        'lakesoul'
+      );
+
+      expect(result.bucket).toEqual(EntityFields.DATABASE_SCHEMA_DISPLAY_NAME);
+    });
+
+    it('keeps the database layer for non-LakeInsight database services', () => {
+      const result = getSubLevelHierarchyKey(
+        true,
+        [
+          {
+            label: 'serviceType',
+            key: EntityFields.SERVICE_TYPE,
+            value: [
+              {
+                key: 'mysql',
+                label: 'mysql',
+              },
+            ],
+          },
+        ],
+        EntityFields.SERVICE,
+        'mysql-prod'
+      );
+
+      expect(result.bucket).toEqual(EntityFields.DATABASE_DISPLAY_NAME);
+    });
   });
 
   describe('getExploreQueryFilterMust', () => {

@@ -287,6 +287,12 @@ UPDATE dbservice_entity
 SET json = jsonb_set(json::jsonb, '{serviceType}', '"LakeInsight"')
 WHERE serviceType = 'Kyuubi';
 
+-- 1b. Connection discriminator. LakeInsightConnection.type only allows 'LakeInsight';
+-- leftover 'Kyuubi' fails Jackson deserialization even after serviceType is rewritten.
+UPDATE dbservice_entity
+SET json = jsonb_set(json::jsonb, '{connection,config,type}', '"LakeInsight"')
+WHERE json #>> '{connection,config,type}' = 'Kyuubi';
+
 -- 2. Data entities carry a denormalized serviceType copied from their service.
 UPDATE database_entity
 SET json = jsonb_set(json::jsonb, '{serviceType}', '"LakeInsight"')

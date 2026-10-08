@@ -1039,8 +1039,15 @@ public class AuthenticationCodeFlowHandler implements AuthServeletHandler {
             validatedRedirectUri, accessToken, user.getEmail(), user.getName()));
   }
 
-  private static boolean isOmIssuedJwt(Map<String, Object> claims) {
-    return claims.get(JWTTokenGenerator.TOKEN_TYPE) != null;
+  static boolean isOmIssuedJwt(Map<String, Object> claims) {
+    Object tokenType = claims.get(JWTTokenGenerator.TOKEN_TYPE);
+    if (tokenType == null) {
+      return false;
+    }
+    String value = getClaimOrObject(tokenType);
+    return ServiceTokenType.OM_USER.value().equals(value)
+        || ServiceTokenType.BOT.value().equals(value)
+        || ServiceTokenType.PERSONAL_ACCESS.value().equals(value);
   }
 
   private static String extractUserNameFromOmJwt(Map<String, Object> claims) {
