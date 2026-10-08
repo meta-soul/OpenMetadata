@@ -30,7 +30,7 @@ from metadata.generated.schema.entity.automations.workflow import (
 )
 from metadata.generated.schema.entity.services.connections.database.lakeinsightConnection import (
     LakeInsightConnection,
-    LakeInsightScheme,
+    LakeinsightScheme,
 )
 from metadata.generated.schema.entity.services.connections.testConnectionResult import (
     TestConnectionResult,
@@ -97,7 +97,7 @@ def get_connection(connection: LakeInsightConnection) -> Engine:
             connection.connectionArguments = init_empty_connection_arguments()
         auth_key = (
             "auth"
-            if connection.scheme in {LakeInsightScheme.hive, LakeInsightScheme.hive_http, LakeInsightScheme.hive_https}
+            if connection.scheme in {LakeinsightScheme.hive, LakeinsightScheme.hive_http, LakeinsightScheme.hive_https}
             else "auth_mechanism"
         )
         connection.connectionArguments.root[auth_key] = connection.auth.value

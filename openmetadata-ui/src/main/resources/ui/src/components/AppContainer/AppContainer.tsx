@@ -24,8 +24,6 @@ import { useLineageStore } from '../../hooks/useLineageStore';
 import { getLimitConfig } from '../../rest/limitsAPI';
 import { getSettingsByType } from '../../rest/settingConfigAPI';
 import applicationRoutesClass from '../../utils/ApplicationRoutesClassBase';
-import { resolveLanguageFromQuery } from '../../utils/i18next/i18nextUtil';
-import i18n from '../../utils/i18next/LocalUtil';
 import { isNewLayoutRoute } from '../../utils/LayoutUtils';
 import AppSidebar from '../AppSidebar/AppSidebar.component';
 import { LimitBanner } from '../common/LimitBanner/LimitBanner';
@@ -95,13 +93,6 @@ const AppContainer = () => {
       analytics.page();
     }
   }, [location.pathname, analytics]);
-
-  useEffect(() => {
-    const queryLanguage = resolveLanguageFromQuery(location.search);
-    if (queryLanguage && i18n.language !== queryLanguage) {
-      void i18n.changeLanguage(queryLanguage);
-    }
-  }, [location.search]);
 
   return (
     <Layout>

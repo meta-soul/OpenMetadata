@@ -15,7 +15,7 @@ import i18next, { t as i18nextT } from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { ReactNode } from 'react';
 import { initReactI18next, Trans } from 'react-i18next';
-import { getInitOptions, resolveLanguageFromQuery } from './i18nextUtil';
+import { getInitOptions } from './i18nextUtil';
 import localUtilClassBase from './LocalUtilClassBase';
 
 i18next
@@ -23,10 +23,7 @@ i18next
   .use(initReactI18next)
   .init(getInitOptions())
   .then(async () => {
-    const queryLanguage = resolveLanguageFromQuery();
-    if (queryLanguage) {
-      await i18next.changeLanguage(queryLanguage);
-    } else if (i18next.language !== i18next.resolvedLanguage) {
+    if (i18next.language !== i18next.resolvedLanguage) {
       await i18next.changeLanguage(i18next.language);
     }
   });

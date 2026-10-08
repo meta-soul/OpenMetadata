@@ -83,30 +83,3 @@ export const languageMap: Record<string, SupportedLocales> = {
   ar: SupportedLocales.العربية,
   sv: SupportedLocales.Svenska,
 };
-
-export const QUERY_LANGUAGE_PARAM = 'lng';
-
-const normalizeQueryLanguage = (raw: string): SupportedLocales | undefined => {
-  const lower = raw.toLowerCase();
-  const exact = Object.values(SupportedLocales).find(
-    (locale) => locale.toLowerCase() === lower
-  );
-
-  if (exact) {
-    return exact;
-  }
-
-  return languageMap[lower.split('-')[0]];
-};
-
-export const resolveLanguageFromQuery = (
-  search: string = window.location.search
-): SupportedLocales | undefined => {
-  const raw = new URLSearchParams(search).get(QUERY_LANGUAGE_PARAM);
-
-  if (!raw?.trim()) {
-    return undefined;
-  }
-
-  return normalizeQueryLanguage(raw.trim());
-};
